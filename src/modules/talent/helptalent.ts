@@ -1,23 +1,28 @@
 /**
  * Created by john_tng on 25/7/18.
  */
+import { ContextMessageUpdate, Context } from 'telegraf';
 
-const Tools = require('../modules/tools');
+import { CommandManager, CommandProcessor } from '../command';
+import Tools from '../tools';
 
 /**
  * A class to handle the general help command.
  */
-class HelpTalent {
+export default class HelpTalent {
+
+    private commandManager: CommandManager;
+    private commandProcessor: CommandProcessor;
 
     /**
      * Class constructor to set some base variables
      * @param commandManager - The object to manage bots commands.
      * @param commandProcessor - The class to process the commands and parameters.
      */
-    constructor(commandManager, commandProcessor) {
+    constructor(commandManager: CommandManager, commandProcessor: CommandProcessor) {
 
-        HelpTalent.commandManager = commandManager;
-        HelpTalent.commandProcessor = commandProcessor;
+        this.commandManager = commandManager;
+        this.commandProcessor = commandProcessor;
 
         // Add bot commands.
         this.init();
@@ -27,8 +32,7 @@ class HelpTalent {
      * Initialise the commands.
      */
     init() {
-
-        HelpTalent.commandManager.add(
+        this.commandManager.add(
             'help',
             'Display basic help.',
             '/help [command]\n- Display more detail help. 👍',
@@ -40,23 +44,19 @@ class HelpTalent {
      * This function will be smart enough to display different help to users and super users.
      * @param ctx - Telegram bot context.
      */
-    displayhelp(ctx) {
+    displayhelp(ctx:ContextMessageUpdate) {
 
         let help = '';
 
-        let command = HelpTalent.commandProcessor.process(ctx);
+        let command = this.commandProcessor.process(ctx);
         if (command.numberOfParams === 0) {
             // display simple help if no parameter.
-            help = HelpTalent.commandManager.getAllHelp();
-
+            help = this.commandManager.getAllHelp();
         } else {
-
             // display simple help if no parameter.
-            help = HelpTalent.commandManager.getDetailHelp(command.param1);
+            help = this.commandManager.getDetailHelp(command.param1);
         }
 
         Tools.replyHTML(ctx, help);
     }
 }
-
-module.exports = HelpTalent;

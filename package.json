@@ -5,5 +5,11 @@
   "dependencies": {
     "dotenv": "^6.2.0",
     "telegraf": "^3.25.5"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^6.1.0",
+    "@types/node": "^10.12.18",
+    "tslint": "^5.12.0",
+    "typescript": "^3.2.2"
   }
 }
