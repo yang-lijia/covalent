@@ -1,0 +1,9 @@
+{
+  "name": "covalent",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "dotenv": "^6.2.0",
+    "telegraf": "^3.25.5"
+  }
+}
