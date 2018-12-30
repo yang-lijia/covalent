@@ -1,29 +1,28 @@
-import { ContextMessageUpdate, Telegraf} from 'telegraf';
-import Command from './command.model';
-
+"use strict";
+exports.__esModule = true;
+var command_model_1 = require("./command.model");
 /**
  * A class used to represent a a command and its necessary information.
  * It has some functions to handle access control for commands and super commands.
  * It has some helper functions to retrieve help and detailHelp.
  */
-export default class CommandManager {
-
-    private commandArray:Array<Command>;
-
+var CommandManager = /** @class */ (function () {
     /**
      * Initialise an empty array first.
      */
-    constructor() {
+    function CommandManager() {
         this.commandArray = [];
     }
-
-    /**
-     * A getter function in case we want to do some processing.
-     */
-    get commands():Array<Command> {
-        return this.commandArray;
-    }
-
+    Object.defineProperty(CommandManager.prototype, "commands", {
+        /**
+         * A getter function in case we want to do some processing.
+         */
+        get: function () {
+            return this.commandArray;
+        },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * Add a command into the command list.
      * @param cmd: String - A command in text.
@@ -32,13 +31,11 @@ export default class CommandManager {
      * @param fn: Function - The function to call for this command.
      * @return {object} : Object - Returns the newly created command object.
      */
-    add(cmd:string, help:string, detailedHelp:string, fn:any):Command {
-        let newCmd = new Command(cmd, help, detailedHelp, false, fn);
+    CommandManager.prototype.add = function (cmd, help, detailedHelp, fn) {
+        var newCmd = new command_model_1["default"](cmd, help, detailedHelp, false, fn);
         this.commandArray.push(newCmd);
-
         return newCmd;
-    }
-
+    };
     /**
      * Add a super command into the command list.
      * @param cmd: String - A command in text.
@@ -47,78 +44,68 @@ export default class CommandManager {
      * @param fn: Function - The function to call for this command.
      * @return {object} : Object - Returns the newly created command object.
      */
-    addSuper(cmd:string, help:string, detailedHelp:string, fn:any):Command {
-        let newCmd = new Command(cmd, help, detailedHelp, true, fn);
+    CommandManager.prototype.addSuper = function (cmd, help, detailedHelp, fn) {
+        var newCmd = new command_model_1["default"](cmd, help, detailedHelp, true, fn);
         this.commandArray.push(newCmd);
-
         return newCmd;
-    }
-
+    };
     /**
      * Combined all the help into a single string and return.
      * @param supercmd: Boolean - State whether we want to show super commands or not.
      * @return String - The combined help string.
      */
-    getAllHelp(supercmd:boolean = false):string {
-
-        let help = 'List of commands:\n';
-
-        this.commandArray.forEach((element) => {
-            if(element.supercmd === false) {
+    CommandManager.prototype.getAllHelp = function (supercmd) {
+        if (supercmd === void 0) { supercmd = false; }
+        var help = 'List of commands:\n';
+        this.commandArray.forEach(function (element) {
+            if (element.supercmd === false) {
                 help = help + '/' + element.cmd + ' - ' + element.help + '\n';
             }
         });
-
-        if(supercmd) {
-
+        if (supercmd) {
             help = help + '\nSuper user commands:\n';
-
-            this.commandArray.forEach((element) => {
-                if(element.supercmd === true) {
-                help = help + '/' + element.cmd + ' - ' + element.help + '\n';
-            }
-        });
+            this.commandArray.forEach(function (element) {
+                if (element.supercmd === true) {
+                    help = help + '/' + element.cmd + ' - ' + element.help + '\n';
+                }
+            });
         }
-
         return help;
-    }
-
+    };
     /**
      * Get the detailed help of a command.
      * @param command: String - The command to retrieve the detail.
      * @param superuser: Boolean - State whether this command is only available for super user.
      * @return String - The detail help of the command if found. Return "invalid..." if not found.
      */
-    getDetailHelp(command:string, superuser:boolean = false):string {
-
-        for(let i = 0; i < this.commandArray.length; ++i) {
-
-            let element = this.commandArray[i];
-            if(element.cmd === command) {
-
+    CommandManager.prototype.getDetailHelp = function (command, superuser) {
+        if (superuser === void 0) { superuser = false; }
+        for (var i = 0; i < this.commandArray.length; ++i) {
+            var element = this.commandArray[i];
+            if (element.cmd === command) {
                 // If this is not a super command, we can return the help.
-                if(element.supercmd === false) {
+                if (element.supercmd === false) {
                     return element.detailHelp;
-                } else {
-
+                }
+                else {
                     // If this is a super command, we need to make sure this is requested by a super user.
-                    if(superuser === true) {
+                    if (superuser === true) {
                         return element.detailHelp;
                     }
                 }
             }
         }
-
         return 'Invalid help command!';
-    }
-
+    };
     /**
      * Simple function to register all the command to the telegram bot.
      * @param bot: telegram bot object - The bot to register all the commands to.
      */
-    registerToBot(bot:Telegraf<ContextMessageUpdate>):void {
-        this.commandArray.forEach((element) => {
-            bot.command(element.cmd, element.fn)
-       });
-    }
-}
+    CommandManager.prototype.registerToBot = function (bot) {
+        this.commandArray.forEach(function (element) {
+            bot.command(element.cmd, element.fn);
+        });
+    };
+    return CommandManager;
+}());
+exports["default"] = CommandManager;

@@ -1,15 +1,25 @@
 {
-  "name": "covalent",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "dotenv": "^6.2.0",
-    "telegraf": "^3.25.5"
-  },
-  "devDependencies": {
-    "@types/dotenv": "^6.1.0",
-    "@types/node": "^10.12.18",
-    "tslint": "^5.12.0",
-    "typescript": "^3.2.2"
-  }
+   "name": "covalent",
+   "version": "1.0.0",
+   "private": true,
+   "main": "src/main.ts",
+   "dependencies": {
+      "dotenv": "^6.2.0",
+      "reflect-metadata": "^0.1.10",
+      "sqlite3": "^4.0.4",
+      "telegraf": "^3.25.5",
+      "typeorm": "0.2.9"
+   },
+   "devDependencies": {
+      "@types/dotenv": "^6.1.0",
+      "@types/node": "^10.12.18",
+      "ts-node": "^7.0.1",
+      "tslint": "^5.12.0",
+      "typescript": "^3.2.2"
+   },
+   "scripts": {
+      "start" : "ts-node --project tsconfig.json src/main.ts",
+      "compile": "tsc && node dist/main.js",
+      "serve": "node ./dist/main.js"
+   }
 }

@@ -87,4 +87,5 @@ dist/
 !.elasticbeanstalk/*.global.yml
 yarn.lock
 
-.vscode/
+# sqlite3 data
+data/

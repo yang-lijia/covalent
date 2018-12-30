@@ -1,13 +1,9 @@
+"use strict";
+exports.__esModule = true;
 /**
  * A small object to keep some command data.
  */
-export default class Command {
-    cmd: string;
-    help: string;
-    detailHelp: string;
-    supercmd: boolean;
-    fn: any;
-
+var Command = /** @class */ (function () {
     /**
      * Initialise the data required to define a command.
      * @param cmd: String - A command in text.
@@ -16,12 +12,13 @@ export default class Command {
      * @param supercmd: Boolean - State whether this command is only available for super user.
      * @param fn: function - The function to call for this command.
      */
-    constructor(cmd: string, help: string, detailHelp: string, supercmd: boolean, fn: any) {
-
+    function Command(cmd, help, detailHelp, supercmd, fn) {
         this.cmd = cmd;
         this.help = help;
         this.detailHelp = detailHelp;
         this.supercmd = supercmd;
         this.fn = fn;
     }
-}
+    return Command;
+}());
+exports["default"] = Command;
