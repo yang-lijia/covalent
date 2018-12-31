@@ -1,5 +1,5 @@
-import {Column, CreateDateColumn, Entity, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
-
+import {Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
+import {Question} from './Question';
 @Entity()
 export class Answer {
 
@@ -9,12 +9,13 @@ export class Answer {
     @Column('varchar')
     answer: string;
 
+    @ManyToOne(type => Question, (question) => question.answers)
+    question: Question;
+
     @CreateDateColumn()
     createdDate: Date;
 
     @UpdateDateColumn()
     updatedDate: Date;
-
-    // Question id FK
 
 }

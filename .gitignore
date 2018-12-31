@@ -88,4 +88,4 @@ dist/
 yarn.lock
 
 # sqlite3 data
-data/
+*.db

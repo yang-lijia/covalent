@@ -1,4 +1,5 @@
-import {Column, CreateDateColumn, Entity, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
+import {Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
+import {Group} from './Group';
 
 @Entity()
 export class Administrator {
@@ -8,8 +9,8 @@ export class Administrator {
     @Column('int')
     userId: number;
 
-    @Column('double precision')
-    groupId: number;
+    @ManyToOne(type => Group, (group) => group.administrators)
+    group: Group;
 
     @CreateDateColumn()
     createdDate: Date;

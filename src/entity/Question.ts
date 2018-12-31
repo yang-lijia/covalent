@@ -1,4 +1,6 @@
-import {Column, CreateDateColumn, Entity, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
+import {Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
+import {Answer} from './Answer';
+import {Survey} from './Survey';
 
 @Entity()
 export class Question {
@@ -13,6 +15,12 @@ export class Question {
 
     @Column('boolean')
     isUsed: boolean;
+
+    @ManyToOne(type => Survey, (survey) => survey.questions)
+    survey: Survey;
+
+    @OneToMany(type => Answer, (answer) => answer.question)
+    answers: Answer[];
 
     @CreateDateColumn()
     createdDate: Date;

@@ -1,5 +1,6 @@
-import {Column, CreateDateColumn, Entity, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
-
+import {Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
+import {Group} from './Group';
+import {Question} from './Question';
 @Entity()
 export class Survey {
     @PrimaryGeneratedColumn()
@@ -8,8 +9,11 @@ export class Survey {
     @Column()
     interval: number;
 
-    @Column('double precision')
-    groupId: number;
+    @ManyToOne(type => Group, (group) => group.surveys)
+    group: Group;
+
+    @OneToMany(type => Question, (question) => question.survey)
+    questions: Question[];
 
     @CreateDateColumn()
     createdDate: Date;
