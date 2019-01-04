@@ -4,11 +4,16 @@
    "port": 3306,
    "database": "data/convalant.db",
    "synchronize": true,
+   "migrationsRun": false,
    "logging": false,
    "entities": [
       "src/entity/**/*.ts"
    ],
+   "migrations": [
+      "dist/migration/**/*.js"
+   ],
    "cli": {
-      "entitiesDir": "src/entity"
+      "entitiesDir": "src/entity",
+      "migrationsDir": "src/migration"
    }
 }
