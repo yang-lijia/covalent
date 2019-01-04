@@ -1,7 +1,7 @@
 
 import { createConnection } from 'typeorm';
 import { CommandManager, CommandProcessor } from './modules/command';
-import { HappyTalent, HelpTalent, RegisterTalent } from './modules/talent';
+import { AddSurvey, HappyTalent, HelpTalent, RegisterTalent } from './modules/talent';
 
 import 'reflect-metadata';
 import Telegraf from 'telegraf';
@@ -18,6 +18,7 @@ const cmdManager = new CommandManager();
 const happyTalent = new HappyTalent(cmdManager, cmdProcessor);
 const helpTalent = new HelpTalent(cmdManager, cmdProcessor);
 const registerTalent = new RegisterTalent(cmdManager, cmdProcessor);
+const addSurvey = new AddSurvey(cmdManager, cmdProcessor);
 
 function init() {
 
