@@ -20,6 +20,8 @@
    "scripts": {
       "start" : "ts-node --project tsconfig.json src/main.ts",
       "compile": "tsc && node dist/main.js",
-      "serve": "node ./dist/main.js"
+      "serve": "node ./dist/main.js",
+      "typeorm-migration-generate" : "./node_modules/.bin/ts-node ./node_modules/.bin/typeorm migration:generate -n Initialize",
+      "typeorm-migration-migration" : "./node_modules/.bin/ts-node ./node_modules/.bin/typeorm migration:run"
    }
 }
