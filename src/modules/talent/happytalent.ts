@@ -1,27 +1,22 @@
-/**
- * Created by john_tng on 25/7/18.
- */
-import { ContextMessageUpdate } from 'telegraf';
+import { ContextMessageUpdate, Markup } from 'telegraf';
 
 import { CommandManager, CommandProcessor } from '../command';
-import Tools from "../tools";
-
-const Markup = require('telegraf/markup');
+import Tools from '../tools';
 
 /**
  * A class to handle the general help command.
  */
 export default class HappyTalent {
 
-    private commandManager:CommandManager;
-    private commandProcessor:CommandProcessor;
+    private commandManager: CommandManager;
+    private commandProcessor: CommandProcessor;
 
     /**
      * Class constructor to set some base variables
      * @param commandManager - The object to manage bots commands.
      * @param commandProcessor - The class to process the commands and parameters.
      */
-    constructor(commandManager:CommandManager, commandProcessor:CommandProcessor) {
+    constructor(commandManager: CommandManager, commandProcessor: CommandProcessor) {
 
         this.commandManager = commandManager;
         this.commandProcessor = commandProcessor;
@@ -38,7 +33,8 @@ export default class HappyTalent {
             'happybo',
             'Check happiness level',
             'Check happiness level',
-            this.checkHappiness);
+            this.checkHappiness.bind(this),
+        );
     }
 
     /**
@@ -46,12 +42,12 @@ export default class HappyTalent {
      * @param ctx - Telegram bot context.
      */
     checkHappiness(ctx: ContextMessageUpdate) {
-        //Todo: shouldn't be a command but rather a cronjob to display question
+        // Todo: shouldn't be a command but rather a cronjob to display question
         Tools.replyInlineKeyboard(ctx, 'Your happiness at work is...', [
-            Markup.callbackButton('😶 Normal', 0),
-            Markup.callbackButton('🙂 Happy', 1),
-            Markup.callbackButton('😄 Very Happy', 2),
-            Markup.callbackButton('😂 Siao liao', 3)
+            Markup.callbackButton('😶 Normal', '0'),
+            Markup.callbackButton('🙂 Happy', '1'),
+            Markup.callbackButton('😄 Very Happy', '2'),
+            Markup.callbackButton('😂 Siao liao', '3'),
         ]);
     }
 }

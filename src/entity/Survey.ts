@@ -9,10 +9,10 @@ export class Survey {
     @Column()
     interval: number;
 
-    @ManyToOne(type => Chatgroup, (chatgroup) => chatgroup.surveys)
+    @ManyToOne((type) => Chatgroup, (chatgroup) => chatgroup.surveys)
     chatgroup: Chatgroup;
 
-    @OneToMany(type => Question, (question) => question.survey)
+    @OneToMany((type) => Question, (question) => question.survey)
     questions: Question[];
 
     @CreateDateColumn()

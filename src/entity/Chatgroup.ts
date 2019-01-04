@@ -14,13 +14,13 @@ export class Chatgroup {
     @Column('bigint')
     chatgroupId: number;
 
-    @OneToMany(type => Administrator, (administrator) => administrator.chatgroup)
+    @OneToMany((type) => Administrator, (administrator) => administrator.chatgroup)
     administrators: Administrator[];
 
-    @OneToMany(type => Feedback, (feedback) => feedback.chatgroup)
+    @OneToMany((type) => Feedback, (feedback) => feedback.chatgroup)
     feedbacks: Feedback[];
 
-    @OneToMany(type => Survey, (survey) => survey.chatgroup)
+    @OneToMany((type) => Survey, (survey) => survey.chatgroup)
     surveys: Survey[];
 
     @CreateDateColumn()

@@ -13,15 +13,17 @@
    "devDependencies": {
       "@types/dotenv": "^6.1.0",
       "@types/node": "^10.12.18",
+      "nodemon": "^1.18.9",
       "ts-node": "^7.0.1",
       "tslint": "^5.12.0",
       "typescript": "^3.2.2"
    },
    "scripts": {
-      "start" : "ts-node --project tsconfig.json src/main.ts",
+      "start": "ts-node --project tsconfig.json src/main.ts",
+      "devbot": "nodemon",
       "compile": "tsc && node dist/main.js",
       "serve": "node ./dist/main.js",
-      "typeorm-migration-generate" : "./node_modules/.bin/ts-node ./node_modules/.bin/typeorm migration:generate -n Initialize",
-      "typeorm-migration-migration" : "./node_modules/.bin/ts-node ./node_modules/.bin/typeorm migration:run"
+      "typeorm-migration-generate": "./node_modules/.bin/ts-node ./node_modules/.bin/typeorm migration:generate -n Initialize",
+      "typeorm-migration-migration": "./node_modules/.bin/ts-node ./node_modules/.bin/typeorm migration:run"
    }
 }

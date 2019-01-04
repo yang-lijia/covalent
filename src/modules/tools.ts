@@ -1,6 +1,3 @@
-/**
- * Created by john_tng on 24/7/18.
- */
 import { ContextMessageUpdate } from 'telegraf';
 
 const Markup = require('telegraf/markup');
@@ -19,23 +16,23 @@ export default {
      * @param ctx - Telegram bot context.
      * @param htmlText - The text to reply.
      */
-    replyHTML: function(ctx:ContextMessageUpdate, htmlText:string) {
+    replyHTML(ctx: ContextMessageUpdate, htmlText: string) {
 
-        return ctx.replyWithHTML(htmlText, 
+        return ctx.replyWithHTML(htmlText,
             Markup.removeKeyboard()
-                  .extra(Extra.inReplyTo(ctx.message.message_id))
+                  .extra(Extra.inReplyTo(ctx.message.message_id)),
             );
     },
 
     /**
      * A generic function to reply a text message and remove the keyboard.
      * Send to the chatID instead of the telegram context.
-     * 
+     *
      * @param ctx - The telegram group chat to reply to.
      * @param htmlText - The text to reply.
      * @param chatid - The reply will be pipe to this chatid instead of the chat in the ctx.
      */
-    replyHTMLChatID: function(ctx:ContextMessageUpdate, htmlText: string, chatid: string | number) {
+    replyHTMLChatID(ctx: ContextMessageUpdate, htmlText: string, chatid: string | number) {
 
         return ctx.telegram.sendMessage(chatid, htmlText, Markup
             .removeKeyboard()
@@ -48,7 +45,7 @@ export default {
      * @param htmlText - The text to reply.
      * @param [options] - The list of options to display in the keyboard.
      */
-    replyKeyboard: function(ctx: ContextMessageUpdate, htmlText:string, options: any) {
+    replyKeyboard(ctx: ContextMessageUpdate, htmlText: string, options: any) {
 
         //
         // There is a bug with the selective() option.
@@ -60,7 +57,7 @@ export default {
             .selective()
             .oneTime()
             .resize()
-            .extra(Extra.inReplyTo(ctx.message.message_id))
+            .extra(Extra.inReplyTo(ctx.message.message_id)),
         );
     },
 
@@ -70,14 +67,13 @@ export default {
      * @param htmlText - The text to reply.
      * @param [options] - The list of options to display in the keyboard.
      */
-    replyInlineKeyboard: function(ctx:ContextMessageUpdate, htmlText:string, options:any) {
+    replyInlineKeyboard(ctx: ContextMessageUpdate, htmlText: string, options: any) {
 
         return ctx.replyWithHTML(htmlText, Markup
             .selective()
             .oneTime()
             .resize()
-            .extra(Extra.HTML().markup( (m) => m.inlineKeyboard(options)))
+            .extra(Extra.HTML().markup( (m) => m.inlineKeyboard(options))),
         );
-    }
-}
-
+    },
+};

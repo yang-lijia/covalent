@@ -14,43 +14,43 @@ export default class CommandProcessor {
     /**
      *
      * @param ctx - Telegram bot context.
-     * @returns {object} - An object containing the command and up to 3 parameters.
+     * @returns - An object containing the command and up to 3 parameters.
      *              {{numberOfParams: number, cmd: string, param1: string, param2: string, param3: string, param4: string, params: Array}}
      */
-    process(ctx:ContextMessageUpdate) {
+    process(ctx: ContextMessageUpdate) {
 
-        let command = {
+        const command = {
             numberOfParams: 0,
             cmd: '',
             param1: '',
             param2: '',
             param3: '',
             param4: '',
-            params:[]
+            params: [],
         };
 
         // Split the string with a [space] character
-        let splitstring = ctx.update.message.text.split(' ');
+        const splitstring = ctx.update.message.text.split(' ');
 
         command.cmd = splitstring[0];
-        command.numberOfParams = splitstring.length -1;
+        command.numberOfParams = splitstring.length - 1;
 
-        if(splitstring.length > 1) {
+        if (splitstring.length > 1) {
             command.param1 = splitstring[1];
             command.params.push(command.param1);
         }
 
-        if(splitstring.length > 2) {
+        if (splitstring.length > 2) {
             command.param2 = splitstring[2];
             command.params.push(command.param2);
         }
 
-        if(splitstring.length > 3) {
+        if (splitstring.length > 3) {
             command.param3 = splitstring[3];
             command.params.push(command.param3);
         }
 
-        if(splitstring.length > 4) {
+        if (splitstring.length > 4) {
             command.param4 = splitstring[4];
             command.params.push(command.param4);
         }
