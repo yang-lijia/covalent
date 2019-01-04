@@ -16,10 +16,10 @@ export class Question {
     @Column('boolean')
     isUsed: boolean;
 
-    @ManyToOne(type => Survey, (survey) => survey.questions)
+    @ManyToOne((type) => Survey, (survey) => survey.questions)
     survey: Survey;
 
-    @OneToMany(type => Answer, (answer) => answer.question)
+    @OneToMany((type) => Answer, (answer) => answer.question)
     answers: Answer[];
 
     @CreateDateColumn()

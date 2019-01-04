@@ -9,7 +9,7 @@ export class Feedback {
     @Column('varchar')
     feedback: string;
 
-    @ManyToOne(type => Chatgroup, (chatgroup) => chatgroup.feedbacks)
+    @ManyToOne((type) => Chatgroup, (chatgroup) => chatgroup.feedbacks)
     chatgroup: Chatgroup;
 
     @CreateDateColumn()

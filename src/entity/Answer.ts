@@ -9,7 +9,7 @@ export class Answer {
     @Column('varchar')
     answer: string;
 
-    @ManyToOne(type => Question, (question) => question.answers)
+    @ManyToOne((type) => Question, (question) => question.answers)
     question: Question;
 
     @CreateDateColumn()
