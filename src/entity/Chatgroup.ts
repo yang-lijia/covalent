@@ -1,5 +1,4 @@
 import {Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
-import {Administrator} from './Administrator';
 import {Feedback} from './Feedback';
 import {Survey} from './Survey';
 
@@ -13,9 +12,6 @@ export class Chatgroup {
 
     @Column('bigint')
     chatgroupId: number;
-
-    @OneToMany((type) => Administrator, (administrator) => administrator.chatgroup)
-    administrators: Administrator[];
 
     @OneToMany((type) => Feedback, (feedback) => feedback.chatgroup)
     feedbacks: Feedback[];
