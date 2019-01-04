@@ -1,5 +1,5 @@
 import {Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
-import {Group} from './Group';
+import {Chatgroup} from './Chatgroup';
 import {Question} from './Question';
 @Entity()
 export class Survey {
@@ -9,8 +9,8 @@ export class Survey {
     @Column()
     interval: number;
 
-    @ManyToOne(type => Group, (group) => group.surveys)
-    group: Group;
+    @ManyToOne(type => Chatgroup, (chatgroup) => chatgroup.surveys)
+    chatgroup: Chatgroup;
 
     @OneToMany(type => Question, (question) => question.survey)
     questions: Question[];

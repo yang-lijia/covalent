@@ -1,5 +1,5 @@
 import {Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
-import {Group} from './Group';
+import {Chatgroup} from './Chatgroup';
 @Entity()
 export class Feedback {
 
@@ -9,8 +9,8 @@ export class Feedback {
     @Column('varchar')
     feedback: string;
 
-    @ManyToOne(type => Group, (group) => group.feedbacks)
-    group: Group;
+    @ManyToOne(type => Chatgroup, (chatgroup) => chatgroup.feedbacks)
+    chatgroup: Chatgroup;
 
     @CreateDateColumn()
     createdDate: Date;
@@ -18,7 +18,4 @@ export class Feedback {
     @UpdateDateColumn()
     updatedDate: Date;
 
-    // Question id FK
-    // @Column('double precision')
-    // groupId: number;
 }
