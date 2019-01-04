@@ -1,16 +1,16 @@
 import {Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
-import {Group} from './Group';
+import {Chatgroup} from './Chatgroup';
 
 @Entity()
 export class Administrator {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column('int')
+    @Column('bigint')
     userId: number;
 
-    @ManyToOne(type => Group, (group) => group.administrators)
-    group: Group;
+    @ManyToOne(type => Chatgroup, (chatgroup) => chatgroup.administrators)
+    chatgroup: Chatgroup;
 
     @CreateDateColumn()
     createdDate: Date;

@@ -1,7 +1,7 @@
 
 import { createConnection } from 'typeorm';
 import { CommandManager, CommandProcessor } from './modules/command';
-import { HappyTalent, HelpTalent } from './modules/talent';
+import { HappyTalent, HelpTalent, RegisterTalent } from './modules/talent';
 
 import 'reflect-metadata';
 import Telegraf from 'telegraf';
@@ -17,6 +17,7 @@ const cmdManager = new CommandManager();
 // All the Talent that the bot can do. :)
 const happyTalent = new HappyTalent(cmdManager, cmdProcessor);
 const helpTalent = new HelpTalent(cmdManager, cmdProcessor);
+const registerTalent = new RegisterTalent(cmdManager, cmdProcessor);
 
 function init() {
 
@@ -33,6 +34,8 @@ function init() {
     bot.startPolling();
 
     bot.on('callback_query', (ctx) => {
+
+        console.log(ctx);
         /*
         *TODO:
          * Store the response based on group

@@ -4,23 +4,23 @@ import {Feedback} from './Feedback';
 import {Survey} from './Survey';
 
 @Entity()
-export class Group {
+export class Chatgroup {
     @PrimaryGeneratedColumn()
     id: number;
 
     @Column('varchar')
     name: string;
 
-    @Column('double precision')
-    groupId: number;
+    @Column('bigint')
+    chatgroupId: number;
 
-    @OneToMany(type => Administrator, (administrator) => administrator.group)
+    @OneToMany(type => Administrator, (administrator) => administrator.chatgroup)
     administrators: Administrator[];
 
-    @OneToMany(type => Feedback, (feedback) => feedback.group)
+    @OneToMany(type => Feedback, (feedback) => feedback.chatgroup)
     feedbacks: Feedback[];
 
-    @OneToMany(type => Survey, (survey) => survey.group)
+    @OneToMany(type => Survey, (survey) => survey.chatgroup)
     surveys: Survey[];
 
     @CreateDateColumn()
