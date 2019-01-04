@@ -1,7 +1,4 @@
-/**
- * Created by john_tng on 25/7/18.
- */
-import { ContextMessageUpdate, Context } from 'telegraf';
+import { Context, ContextMessageUpdate } from 'telegraf';
 
 import { CommandManager, CommandProcessor } from '../command';
 import Tools from '../tools';
@@ -25,18 +22,12 @@ export default class HelpTalent {
         this.commandProcessor = commandProcessor;
 
         // Add bot commands.
-        this.init();
-    }
-
-    /**
-     * Initialise the commands.
-     */
-    init() {
-        this.commandManager.add(
+        commandManager.add(
             'help',
             'Display basic help.',
             '/help [command]\n- Display more detail help. 👍',
-            this.displayhelp);
+            this.displayhelp.bind(this),
+        );
     }
 
     /**
@@ -44,11 +35,10 @@ export default class HelpTalent {
      * This function will be smart enough to display different help to users and super users.
      * @param ctx - Telegram bot context.
      */
-    displayhelp(ctx:ContextMessageUpdate) {
-
+    displayhelp(ctx: ContextMessageUpdate) {
         let help = '';
 
-        let command = this.commandProcessor.process(ctx);
+        const command = this.commandProcessor.process(ctx);
         if (command.numberOfParams === 0) {
             // display simple help if no parameter.
             help = this.commandManager.getAllHelp();

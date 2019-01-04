@@ -1,11 +1,11 @@
-{
+const path = require('path');
+
+module.exports = {
    "type": "sqlite",
-   "host": "localhost",
-   "port": 3306,
-   "database": "data/covalent.db",
+   "database": `${path.resolve(__dirname, "data/covalent.db")}`,
    "synchronize": true,
    "migrationsRun": false,
-   "logging": false,
+   "logging": true,
    "entities": [
       "src/entity/**/*.ts"
    ],

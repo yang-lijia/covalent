@@ -1,4 +1,3 @@
-
 import { createConnection } from 'typeorm';
 import { CommandManager, CommandProcessor } from './modules/command';
 import { HappyTalent, HelpTalent, RegisterTalent } from './modules/talent';
@@ -19,12 +18,15 @@ const happyTalent = new HappyTalent(cmdManager, cmdProcessor);
 const helpTalent = new HelpTalent(cmdManager, cmdProcessor);
 const registerTalent = new RegisterTalent(cmdManager, cmdProcessor);
 
-function init() {
-
+async function init() {
     // Initialize database
-    createConnection().then(async (connection) => {
-        console.log('Initializing Database');
-    }).catch((error) => console.log(`Error : ${error}`));
+    try {
+        const connection = await createConnection();
+        console.log('Connection created:');
+        console.log(JSON.stringify(connection.options, null, 2));
+    } catch (error) {
+        console.error(error);
+    }
 
     // Call this to register all the commands to the bot.
     cmdManager.registerToBot(bot);
@@ -34,7 +36,6 @@ function init() {
     bot.startPolling();
 
     bot.on('callback_query', (ctx) => {
-
         console.log(ctx);
         /*
         *TODO:
@@ -45,7 +46,6 @@ function init() {
           * ctx.editMessageText()
           * Need to think about how we gonna do this... Imagine if there is a lot of group and user
         */
-
     });
 }
 

@@ -9,7 +9,7 @@ export class Administrator {
     @Column('bigint')
     userId: number;
 
-    @ManyToOne(type => Chatgroup, (chatgroup) => chatgroup.administrators)
+    @ManyToOne((type) => Chatgroup, (chatgroup) => chatgroup.administrators)
     chatgroup: Chatgroup;
 
     @CreateDateColumn()

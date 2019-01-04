@@ -65,3 +65,6 @@ yarn.lock
 
 # sqlite3 data
 *.db
+
+# .env file to store secrets
+.env
