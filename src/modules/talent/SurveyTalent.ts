@@ -5,7 +5,7 @@ import {Chatgroup} from '../../entity/Chatgroup';
 import { CommandManager, CommandProcessor } from '../command';
 import Tools from '../tools';
 
-export default class AddSurvey {
+export default class SurveyTalent {
 
     private commandManager: CommandManager;
     private commandProcessor: CommandProcessor;
