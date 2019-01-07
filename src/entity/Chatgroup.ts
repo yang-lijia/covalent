@@ -18,7 +18,7 @@ export class Chatgroup {
     administrators: Administrator[];
 
     @OneToMany((type) => Feedback, (feedback) => feedback.chatgroup)
-    feedbacks: Feedback[];
+    feedback: Feedback[];
 
     @OneToMany((type) => Survey, (survey) => survey.chatgroup)
     surveys: Survey[];

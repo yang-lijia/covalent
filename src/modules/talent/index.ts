@@ -1,6 +1,7 @@
-import AddSurvey from './addsurvey';
-import HappyTalent from './happytalent';
-import HelpTalent from './helptalent';
-import RegisterTalent from './registertalent';
+import DebugTalent from './DebugTalent';
+import HappyTalent from './HappyTalent';
+import HelpTalent from './HelpTalent';
+import RegisterTalent from './RegisterTalent';
+import SurveyTalent from './SurveyTalent';
 
-export {AddSurvey, HappyTalent, HelpTalent, RegisterTalent };
+export {SurveyTalent, DebugTalent, HappyTalent, HelpTalent, RegisterTalent };

@@ -32,7 +32,7 @@ export default class AddSurvey {
             'addsurvey',
             'Add a survey',
             'Add a survey',
-            this.addSurvey);
+            this.addSurvey.bind(this));
     }
 
     /**

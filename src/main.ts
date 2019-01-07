@@ -1,6 +1,6 @@
 import { createConnection } from 'typeorm';
 import { CommandManager, CommandProcessor } from './modules/command';
-import { AddSurvey, HappyTalent, HelpTalent, RegisterTalent } from './modules/talent';
+import { DebugTalent, HappyTalent, HelpTalent, RegisterTalent, SurveyTalent } from './modules/talent';
 
 import 'reflect-metadata';
 import Telegraf from 'telegraf';
@@ -17,7 +17,10 @@ const cmdManager = new CommandManager();
 const happyTalent = new HappyTalent(cmdManager, cmdProcessor);
 const helpTalent = new HelpTalent(cmdManager, cmdProcessor);
 const registerTalent = new RegisterTalent(cmdManager, cmdProcessor);
-const addSurvey = new AddSurvey(cmdManager, cmdProcessor);
+const surveyTalent = new SurveyTalent(cmdManager, cmdProcessor);
+if (process.env.NODE_ENV !== 'production') {
+    const debugTalent = new DebugTalent(cmdManager, cmdProcessor);
+}
 
 async function init() {
     // Initialize database
