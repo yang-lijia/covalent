@@ -1,4 +1,4 @@
-import {Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
+import {Column, CreateDateColumn, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
 import {Chatgroup} from './Chatgroup';
 
 @Entity()
@@ -9,8 +9,9 @@ export class Administrator {
     @Column('bigint')
     userId: number;
 
-    @ManyToOne((type) => Chatgroup, (chatgroup) => chatgroup.administrators)
-    chatgroup: Chatgroup;
+    @ManyToMany((type) => Chatgroup)
+    @JoinTable()
+    chatgroups: Chatgroup[];
 
     @CreateDateColumn()
     createdDate: Date;
