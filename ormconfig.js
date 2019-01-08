@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
    "type": "sqlite",
    "database": `${path.resolve(__dirname, "data/covalent.db")}`,
-   "synchronize": true,
+   "synchronize": process.env.NODE_ENV !== 'production',
    "migrationsRun": false,
    "logging": true,
    "entities": [
