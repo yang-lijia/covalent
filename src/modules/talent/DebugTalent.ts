@@ -1,6 +1,9 @@
 import {getRepository} from 'typeorm';
 import { CommandManager, CommandProcessor } from '../command';
 
+import { ContextMessageUpdate } from 'telegraf';
+import * as Entities from '../../entity';
+
 export default class DebugTalent {
     private commandManager: CommandManager;
     private commandProcessor: CommandProcessor;
@@ -16,11 +19,15 @@ export default class DebugTalent {
         this.commandProcessor = commandProcessor;
 
         // Add bot commands.
-        // commandManager.add(
-        //     'help',
-        //     'Display basic help.',
-        //     '/help [command]\n- Display more detail help. 👍',
-        //     undefined,
-        // );
+        commandManager.add(
+            'debug',
+            'For debugging purposes',
+            '/debug [message | ]',
+            this.debugTable.bind(this),
+        );
+    }
+
+    async debugTable(ctx: ContextMessageUpdate) {
+        ctx.reply(JSON.stringify(ctx.message, null , 2));
     }
 }
