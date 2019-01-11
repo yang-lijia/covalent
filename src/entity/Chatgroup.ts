@@ -1,8 +1,9 @@
-import {Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn , UpdateDateColumn} from 'typeorm';
+import {Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn , Unique, UpdateDateColumn} from 'typeorm';
 import {Feedback} from './Feedback';
 import {Survey} from './Survey';
 
 @Entity()
+@Unique(['chatgroupId'])
 export class Chatgroup {
     @PrimaryGeneratedColumn()
     id: number;
