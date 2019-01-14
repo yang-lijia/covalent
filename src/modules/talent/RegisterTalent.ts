@@ -68,12 +68,12 @@ export default class RegisterTalent {
             const administrators = await ctx.getChatAdministrators();
 
             // We want 4 buttons per row for admin
-            let totalBins = Math.ceil(administrators.length / 4); // There will always be at least 1 admin, hence >= 1 bins.
-            // Buttons is now [[], [], ...], containing [] equal to no of bins.
+            // There will always be at least 1 admin, hence totalBins >= 1.
+            let totalBins = Math.ceil(administrators.length / 4);
             while (totalBins > 0) {
                 buttons.push([]);
                 totalBins--;
-            }
+            } // Buttons is now [[], [], ...], containing [] equal to no of bins.
             for (let i = 0; i < administrators.length; i++) {
                 const admin = administrators[i];
                 const bin = Math.floor(i / 4);
