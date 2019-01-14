@@ -1,7 +1,7 @@
 import { ContextMessageUpdate, Markup } from 'telegraf';
 import { getRepository } from 'typeorm';
 import { Chatgroup } from '../../entity/Chatgroup';
-import ActiveSession from '../activeSession'
+import ActiveSession from '../activeSession';
 
 import { CommandManager, CommandProcessor } from '../command';
 import Tools from '../tools';
@@ -33,7 +33,7 @@ export default class RegisterTalent {
      */
     init() {
         this.commandManager.add(
-            '/start',
+            'start',
             'Start using Covalent',
             'Start using Covalent',
             this.register.bind(this),
@@ -72,7 +72,6 @@ export default class RegisterTalent {
         } else {
             Tools.replyHTML(ctx, 'Oh no, find your buddies & have fun together. :) ');
         }
-
 
     }
 }
