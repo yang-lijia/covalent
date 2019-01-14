@@ -87,6 +87,7 @@ export default class RegisterTalent {
         }
     }
 
+<<<<<<< HEAD
     async unregister(ctx: ContextMessageUpdate) {
         const response = await ctx.getChat();
         if (response.type === 'group') {
@@ -102,5 +103,7 @@ export default class RegisterTalent {
                 ctx.reply('Sorry, something went wrong while trying to unregister this chat!');
             }
         }
+=======
+>>>>>>> 499efdf4e7058371f20be08d3dddbf3aceeb2ed8
     }
 }
