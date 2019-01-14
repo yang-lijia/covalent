@@ -1,6 +1,7 @@
 import { ContextMessageUpdate, Markup } from 'telegraf';
 import { getRepository } from 'typeorm';
 import { Chatgroup } from '../../entity/Chatgroup';
+import ActiveSession from '../activeSession'
 
 import { CommandManager, CommandProcessor } from '../command';
 import Tools from '../tools';
@@ -40,30 +41,38 @@ export default class RegisterTalent {
     }
 
     /**
-     * Display survey question for user
+     * Register a group
      * @param ctx - Telegram bot context.
      */
-    register(ctx: ContextMessageUpdate) {
-        // Todo: shouldn't be a command but rather a cronjob to display question
-        ctx.getChat().then(async (response) => {
+    async register(ctx: ContextMessageUpdate) {
+        let response = await ctx.getChat();
 
-            const isGroup = response.type === 'group';
+        const isGroup = response.type === 'group';
 
-            if (isGroup) {
-                const group = new Chatgroup();
-                group.chatgroupId = response.id;
-                group.name = response.title;
-                try {
-                    await getRepository(Chatgroup).save(group);
-                } catch (Exception) {
-                     console.log(Exception);
-                    }
+        if (isGroup) {
+            const group = new Chatgroup();
+            group.chatgroupId = response.id;
+            group.name = response.title;
+            try {
+                await getRepository(Chatgroup).save(group);
 
-                Tools.replyHTML(ctx, 'Welcome on board! Who shall be the administrator for this group? ');
-
-            } else {
-                Tools.replyHTML(ctx, 'Oh no, find your buddies & have fun together. :) ');
+            } catch (Exception) {
+                 console.log(Exception);
             }
-        });
+
+            let administrators = await ctx.getChatAdministrators();
+            let buttons = [];
+            for (let i = 0; i < administrators.length; i++) {
+                buttons.push(Markup.callbackButton(administrators[i].user.first_name, administrators[i].user.id.toString()));
+            }
+            ActiveSession.startSession('addAdministrator', response.id);
+
+            Tools.replyInlineKeyboard(ctx, 'Welcome on board! Who shall be the administrator for this group?', buttons);
+
+        } else {
+            Tools.replyHTML(ctx, 'Oh no, find your buddies & have fun together. :) ');
+        }
+
+
     }
 }

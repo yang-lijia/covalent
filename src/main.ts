@@ -1,6 +1,7 @@
 import { createConnection } from 'typeorm';
 import { CommandManager, CommandProcessor } from './modules/command';
 import { DebugTalent, HappyTalent, HelpTalent, RegisterTalent, SurveyTalent } from './modules/talent';
+import ActiveSession from './modules/activeSession'
 
 import 'reflect-metadata';
 import Telegraf from 'telegraf';
@@ -40,7 +41,21 @@ async function init() {
     bot.startPolling();
 
     bot.on('callback_query', (ctx) => {
+
         console.log(ctx);
+
+        let chatId = ctx.update.callback_query.message.chat.id;
+
+        let action = ActiveSession.getSession(chatId).action;
+
+        switch(action){
+            case 'addAdministrator':
+                ctx.answerCbQuery('Adding Administrator');
+                ctx.editMessageText('Admininstrator added');
+                break;
+            default:
+
+        }
         /*
         *TODO:
          * Store the response based on group
