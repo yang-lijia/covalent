@@ -1,6 +1,6 @@
 ## Directory-based project format:
 .idea/
-.vscode/
+# .vscode/
 *.iml
 # if you remove the above rule, at least ignore the following:
 

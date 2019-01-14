@@ -12,6 +12,27 @@ const Extra = require('telegraf/extra');
 export default {
 
     /**
+     * For removing left-side whitespace from template literal expressions
+     * @param strings strings of template literal
+     * @param params params of template literal
+     */
+    removeTemplateLiteralIndents(strings: TemplateStringsArray, ...params: string[]) {
+        // there will be n strings and n - 1 params
+        // first construct string as default
+        // then split on newlines and trim each line.
+        let output = '';
+        for (let i = 0; i < params.length; i++) {
+            output += strings[i] + params[i];
+        }
+        output += strings[params.length];
+        // Split on newlines and trim each line.
+        const lines = output.split(/(?:\r\n|\n|\r)/);
+        return lines.map((line) => {
+            return line.trimLeft();
+        }).join('\n');
+    },
+
+    /**
      * A generic function to reply a text message and remove the keyboard.
      * @param ctx - Telegram bot context.
      * @param htmlText - The text to reply.
@@ -68,12 +89,11 @@ export default {
      * @param [options] - The list of options to display in the keyboard.
      */
     replyInlineKeyboard(ctx: ContextMessageUpdate, htmlText: string, options: any) {
-
-        return ctx.replyWithHTML(htmlText, Markup
-            .selective()
-            .oneTime()
-            .resize()
-            .extra(Extra.HTML().markup( (m) => m.inlineKeyboard(options))),
+        return ctx.replyWithHTML(htmlText,
+            Markup.selective()
+                .oneTime()
+                .resize()
+                .extra(Extra.HTML().markup( (m) => m.inlineKeyboard(options))),
         );
     },
 };

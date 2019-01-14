@@ -2,20 +2,19 @@
 /*
  * Use to keep track of active sessions
  * */
-let activeSessions = {};
+const activeSessions = {};
 
 export default {
 
-    getSession(chatId){
+    getSession(chatId) {
         return activeSessions[chatId];
     },
 
-    startSession(action, chatId){
-        activeSessions[chatId] = { action: action };
+    startSession(action, chatId) {
+        activeSessions[chatId] = { action };
     },
 
-    endSession(chatId){
+    endSession(chatId) {
         delete activeSessions[chatId];
-    }
-}
-
+    },
+};

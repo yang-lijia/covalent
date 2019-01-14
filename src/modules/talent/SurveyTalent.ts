@@ -40,7 +40,7 @@ export default class SurveyTalent {
      * @param ctx - Telegram bot context.
      */
     addSurvey(ctx: ContextMessageUpdate) {
-        Tools.replyHTML(ctx, 'Please name your survey:');
+        Tools.replyInlineKeyboard(ctx, 'Please name your survey:', {});
     }
 
 }
