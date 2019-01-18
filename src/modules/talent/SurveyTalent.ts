@@ -1,6 +1,7 @@
-import {ContextMessageUpdate, Markup} from 'telegraf';
-import {getRepository} from 'typeorm';
-import {Chatgroup} from '../../entity/Chatgroup';
+import { ContextMessageUpdate, Markup } from 'telegraf';
+import { getRepository } from 'typeorm';
+import { Administrator } from '../../entity/Administrator';
+import { Chatgroup } from '../../entity/Chatgroup';
 
 import { CommandManager, CommandProcessor } from '../command';
 import Tools from '../tools';
@@ -21,26 +22,39 @@ export default class SurveyTalent {
         this.commandProcessor = commandProcessor;
 
         // Add bot commands.
-        this.init();
-    }
-
-    /**
-     * Initialise the commands.
-     */
-    init() {
         this.commandManager.add(
             'addsurvey',
             'Add a survey',
             'Add a survey',
-            this.addSurvey.bind(this));
+            this.addSurvey.bind(this),
+        );
     }
 
     /**
      * Add a survey for a particular chat group
      * @param ctx - Telegram bot context.
      */
-    addSurvey(ctx: ContextMessageUpdate) {
-        Tools.replyInlineKeyboard(ctx, 'Please name your survey:', {});
-    }
+    async addSurvey(ctx: ContextMessageUpdate) {
+        const adminRepository = getRepository(Administrator);
+        const chatgroupRepository = getRepository(Chatgroup);
 
+        // Check if is group, and that invoker is admin of chatgroup
+        if (ctx.chat.type === 'group') {
+            const admin = await adminRepository
+                .createQueryBuilder('administrator')
+                .leftJoinAndSelect('administrator.chatgroups', 'chatgroup', 'chatgroup.chatgroupId = :chatgroupId', {
+                    chatgroupId: ctx.chat.id,
+                })
+                .where('administrator.userId = :userId', { userId: ctx.from.id })
+                .getOne();
+
+            if (admin && admin.chatgroups.length > 0) {
+                // Button list of available, default surveys, 3 in total
+
+            } else {
+                ctx.reply('Sorry, you are not a survey admin of this chat group!');
+            }
+        }
+        // Support custom surveys?
+    }
 }

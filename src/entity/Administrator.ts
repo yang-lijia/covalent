@@ -9,7 +9,10 @@ export class Administrator {
     @Column('bigint')
     userId: number;
 
-    @ManyToMany((type) => Chatgroup, chatgroup => chatgroup.administrators)
+    @ManyToMany((type) => Chatgroup, (chatgroup) => chatgroup.administrators, {
+        eager: true,
+    })
+
     @JoinTable()
     chatgroups: Chatgroup[];
 
