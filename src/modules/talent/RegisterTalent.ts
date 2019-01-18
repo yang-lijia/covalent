@@ -1,6 +1,7 @@
 import { ContextMessageUpdate, Markup } from 'telegraf';
 import { getRepository } from 'typeorm';
 import { Chatgroup } from '../../entity/Chatgroup';
+import { Administrator } from '../../entity/Administrator';
 import ActiveSession from '../activeSession';
 
 import { CommandManager, CommandProcessor } from '../command';
@@ -37,6 +38,12 @@ export default class RegisterTalent {
             'Unregister this chat group from covalent',
             this.unregister.bind(this),
         );
+        this.commandManager.add(
+            'addAdministrator',
+            'Add administrator to manage covalent',
+            'Add administrator to manage covalent',
+            this.showAdministrator.bind(this),
+        )
     }
 
     /**
@@ -44,6 +51,7 @@ export default class RegisterTalent {
      * @param ctx - Telegram bot context.
      */
     async register(ctx: ContextMessageUpdate) {
+
         const response = await ctx.getChat();
 
         const isGroup = response.type === 'group';
@@ -64,24 +72,9 @@ export default class RegisterTalent {
                 return;
             }
 
-            const buttons = [];
-            const administrators = await ctx.getChatAdministrators();
+            await this.showAdministrator(ctx);
 
-            // We want 4 buttons per row for admin
-            // There will always be at least 1 admin, hence totalBins >= 1.
-            let totalBins = Math.ceil(administrators.length / 4);
-            while (totalBins > 0) {
-                buttons.push([]);
-                totalBins--;
-            } // Buttons is now [[], [], ...], containing [] equal to no of bins.
-            for (let i = 0; i < administrators.length; i++) {
-                const admin = administrators[i];
-                const bin = Math.floor(i / 4);
-                buttons[bin].push(Markup.callbackButton(admin.user.first_name, admin.user.id.toString()));
-            }
-            ActiveSession.startSession('addAdministrator', group.chatgroupId);
 
-            Tools.replyInlineKeyboard(ctx, 'Welcome on board! Who shall be the administrator for this group?', buttons);
         } else {
             ctx.reply('Oh no, find your buddies & have fun together. :) ');
         }
@@ -102,5 +95,75 @@ export default class RegisterTalent {
                 ctx.reply('Sorry, something went wrong while trying to unregister this chat!');
             }
         }
+    }
+
+    async showAdministrator(ctx: ContextMessageUpdate){
+
+        const response = await ctx.getChat();
+
+        const buttons = [];
+        const administrators = await ctx.getChatAdministrators();
+
+        //We need to check who is already a admin for this group
+
+        // We want 4 buttons per row for admin
+        // There will always be at least 1 admin, hence totalBins >= 1.
+        let totalBins = Math.ceil(administrators.length / 4);
+        while (totalBins > 0) {
+            buttons.push([]);
+            totalBins--;
+        } // Buttons is now [[], [], ...], containing [] equal to no of bins.
+        for (let i = 0; i < administrators.length; i++) {
+            const admin = administrators[i];
+            const bin = Math.floor(i / 4);
+            buttons[bin].push(Markup.callbackButton(admin.user.first_name, admin.user.id.toString()));
+        }
+        buttons.push([]);
+        buttons[buttons.length-1].push(Markup.callbackButton('Done!', 'done'));
+
+        ActiveSession.startSession('addAdministrator', response.id);
+
+        Tools.replyInlineKeyboard(ctx, 'Who shall be the administrator for this group?', buttons);
+
+    }
+
+    async addAdministrator(ctx: ContextMessageUpdate){
+
+        //check if is exit; kill session
+        //else we add administrator
+
+        console.log(ctx);
+        //ctx.answerCbQuery('Adding Administrator');
+        //ctx.editMessageText('Admininstrator added'); //remove the button
+
+
+        // try {
+        //     const chatgroup = await getRepository(Chatgroup)
+        //         .createQueryBuilder("chatgroup")
+        //         .where("chatgroup.id = :id", { chatgroupId:  })
+        //         .getOne();
+        //
+        // } catch (exception) {
+        //     ctx.reply(Tools.removeTemplateLiteralIndents`Sorry, an error occurred.`);
+        //     return;
+        // }
+
+        //need to check if admin exist
+
+        // const admin = new Administrator()
+        // admin.userId = ;
+        // admin.chatgroups.push(chatgroup)
+
+        // try {
+        //     await getRepository(Administrator).save(admin);
+        // } catch (exception) {
+        //     if (exception.message.indexOf('UNIQUE constraint failed') !== -1) {
+        //         ctx.reply(Tools.removeTemplateLiteralIndents`Sorry, this chat group has already been registered! You can:
+        //                 view admins with /viewadmins
+        //                 change admins with /changeadmins
+        //                 unregister with /unregister`);
+        //     }
+        //     return;
+        // }
     }
 }

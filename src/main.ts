@@ -47,8 +47,7 @@ async function init() {
             const action = ActiveSession.getSession(chatId).action;
             switch (action) {
                 case 'addAdministrator':
-                    ctx.answerCbQuery('Adding Administrator');
-                    ctx.editMessageText('Admininstrator added');
+                    registerTalent.addAdministrator(ctx);
                     break;
                 default:
                     break;
