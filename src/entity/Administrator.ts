@@ -1,7 +1,8 @@
-import {Column, CreateDateColumn, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
+import {Column, CreateDateColumn, Entity, JoinTable, Unique, ManyToMany, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
 import {Chatgroup} from './Chatgroup';
 
 @Entity()
+@Unique(['userId'])
 export class Administrator {
     @PrimaryGeneratedColumn()
     id: number;

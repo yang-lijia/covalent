@@ -54,7 +54,7 @@ export default class RegisterTalent {
 
         const response = await ctx.getChat();
 
-        const isGroup = response.type === 'group';
+        const isGroup = response.type === 'group' || response.type === 'supergroup';
 
         if (isGroup) {
             const group = new Chatgroup();
@@ -88,7 +88,8 @@ export default class RegisterTalent {
                 const chatgroup = await chatgroupRepo.findOne({
                     chatgroupId: response.id,
                 });
-                // Need to remove all admins and feedback also?
+                // To do: Confirmation to delete before we delete?
+                // To do: Need to remove all admins and feedback also?
                 await chatgroupRepo.remove(chatgroup);
                 ctx.reply('This group has been successfully unregistered!');
             } catch (exception) {
@@ -101,10 +102,22 @@ export default class RegisterTalent {
 
         const response = await ctx.getChat();
 
+        console.log(response.id);
+
         const buttons = [];
         const administrators = await ctx.getChatAdministrators();
 
-        //We need to check who is already a admin for this group
+        const adminRepository = await getRepository(Administrator);
+        const admins = await adminRepository
+            .createQueryBuilder('administrator')
+            .leftJoinAndSelect('administrator.chatgroups', 'chatgroup', 'chatgroup.chatgroupId = :chatgroupId', {
+                chatgroupId: response.id,
+            })
+            .getMany();
+
+        console.log(admins);
+
+        //ToDo: We need to check who is already a admin for this group
 
         // We want 4 buttons per row for admin
         // There will always be at least 1 admin, hence totalBins >= 1.
@@ -119,7 +132,7 @@ export default class RegisterTalent {
             buttons[bin].push(Markup.callbackButton(admin.user.first_name, admin.user.id.toString()));
         }
         buttons.push([]);
-        buttons[buttons.length-1].push(Markup.callbackButton('Done!', 'done'));
+        buttons[buttons.length-1].push(Markup.callbackButton('Exit!', 'exit'));
 
         ActiveSession.startSession('addAdministrator', response.id);
 
@@ -131,39 +144,45 @@ export default class RegisterTalent {
 
         //check if is exit; kill session
         //else we add administrator
+        let callbackQuery = ctx.update.callback_query;
+        if(callbackQuery.data === 'exit'){
+            ctx.answerCbQuery('Ok! Ready for next command!');
+            ctx.editMessageText('Done with adding administrators!'); //remove the button
 
-        console.log(ctx);
-        //ctx.answerCbQuery('Adding Administrator');
-        //ctx.editMessageText('Admininstrator added'); //remove the button
+        }else{
+            let chatgroupId = callbackQuery.message.chat.id;
+            let userId = parseInt(callbackQuery.data);
+            const chatgroupRepo = await getRepository(Chatgroup);
+            const chatgroup = await chatgroupRepo.findOne({
+                chatgroupId: chatgroupId
+            });
 
+            const administratorRepo = await getRepository(Administrator);
+            const administrator = await administratorRepo.findOne({
+                userId: userId
+            });
 
-        // try {
-        //     const chatgroup = await getRepository(Chatgroup)
-        //         .createQueryBuilder("chatgroup")
-        //         .where("chatgroup.id = :id", { chatgroupId:  })
-        //         .getOne();
-        //
-        // } catch (exception) {
-        //     ctx.reply(Tools.removeTemplateLiteralIndents`Sorry, an error occurred.`);
-        //     return;
-        // }
+            if(administrator){
+                let found = administrator.chatgroups.find( function( group ) {
+                    return group.chatgroupId === chatgroupId;
+                } );
+                if(found){
+                    ctx.answerCbQuery('He/She is already an administrator for this group.');
+                }else{
+                    administrator.chatgroups.push(chatgroup);
+                    await getRepository(Administrator).save(administrator);
+                }
+                //To do: check if administrator already added for chat group
+            }else{
+                const newAdministrator = new Administrator();
+                newAdministrator.userId = userId;
+                newAdministrator.chatgroups = [];
+                newAdministrator.chatgroups.push(chatgroup);
+                await getRepository(Administrator).save(newAdministrator);
+                ctx.answerCbQuery('Successfully added!');
+            }
 
-        //need to check if admin exist
+        }
 
-        // const admin = new Administrator()
-        // admin.userId = ;
-        // admin.chatgroups.push(chatgroup)
-
-        // try {
-        //     await getRepository(Administrator).save(admin);
-        // } catch (exception) {
-        //     if (exception.message.indexOf('UNIQUE constraint failed') !== -1) {
-        //         ctx.reply(Tools.removeTemplateLiteralIndents`Sorry, this chat group has already been registered! You can:
-        //                 view admins with /viewadmins
-        //                 change admins with /changeadmins
-        //                 unregister with /unregister`);
-        //     }
-        //     return;
-        // }
     }
 }

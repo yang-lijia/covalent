@@ -44,6 +44,10 @@ async function init() {
         const chatId = ctx.update.callback_query.message.chat.id;
 
         try {
+            if(!ActiveSession.getSession(chatId)){
+                ctx.editMessageText('This message has timed out. Kindly issue another command.');
+                return;
+            }
             const action = ActiveSession.getSession(chatId).action;
             switch (action) {
                 case 'addAdministrator':
