@@ -10,8 +10,8 @@ export default {
         return activeSessions[chatId];
     },
 
-    startSession(action, chatId) {
-        activeSessions[chatId] = { action };
+    startSession(action, chatId, msg) {
+        activeSessions[chatId] = { action: action, message: msg };
     },
 
     endSession(chatId) {

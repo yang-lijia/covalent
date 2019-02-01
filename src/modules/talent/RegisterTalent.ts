@@ -102,8 +102,6 @@ export default class RegisterTalent {
 
         const response = await ctx.getChat();
 
-        console.log(response.id);
-
         const buttons = [];
         const administrators = await ctx.getChatAdministrators();
 
@@ -114,8 +112,6 @@ export default class RegisterTalent {
                 chatgroupId: response.id,
             })
             .getMany();
-
-        console.log(admins);
 
         //ToDo: We need to check who is already a admin for this group
 
@@ -134,7 +130,9 @@ export default class RegisterTalent {
         buttons.push([]);
         buttons[buttons.length-1].push(Markup.callbackButton('Exit!', 'exit'));
 
-        ActiveSession.startSession('addAdministrator', response.id);
+        let message = ctx.update.message;
+
+        ActiveSession.startSession('addAdministrator', response.id, message);
 
         Tools.replyInlineKeyboard(ctx, 'Who shall be the administrator for this group?', buttons);
 

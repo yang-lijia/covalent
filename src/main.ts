@@ -43,11 +43,16 @@ async function init() {
     bot.on('callback_query', (ctx) => {
         const chatId = ctx.update.callback_query.message.chat.id;
 
+        let currentSession = ActiveSession.getSession(chatId);
+        let msgDate = ctx.update.callback_query.message.date;
+
+        if( (currentSession && msgDate < currentSession.message.date) || !currentSession){
+            //Old replies
+            ctx.editMessageText('This message has timed out. Kindly issue another command.');
+            return;
+        }
+
         try {
-            if(!ActiveSession.getSession(chatId)){
-                ctx.editMessageText('This message has timed out. Kindly issue another command.');
-                return;
-            }
             const action = ActiveSession.getSession(chatId).action;
             switch (action) {
                 case 'addAdministrator':
