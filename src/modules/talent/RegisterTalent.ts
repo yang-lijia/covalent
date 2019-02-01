@@ -103,38 +103,43 @@ export default class RegisterTalent {
         const response = await ctx.getChat();
 
         const buttons = [];
-        const administrators = await ctx.getChatAdministrators();
+        const chatAdministrators = await ctx.getChatAdministrators();
 
         const adminRepository = await getRepository(Administrator);
-        const admins = await adminRepository
+        const currentAdmins = await adminRepository
             .createQueryBuilder('administrator')
-            .leftJoinAndSelect('administrator.chatgroups', 'chatgroup', 'chatgroup.chatgroupId = :chatgroupId', {
+            .select('administrator.userId')
+            .leftJoin('administrator.chatgroups', 'chatgroup', 'chatgroup.chatgroupId = :chatgroupId', {
                 chatgroupId: response.id,
             })
             .getMany();
 
-        //ToDo: We need to check who is already a admin for this group
+        let newAdmins = chatAdministrators.filter(chatAdministrator => !currentAdmins.find(currentAdmin => currentAdmin.userId === chatAdministrator.user.id));
 
         // We want 4 buttons per row for admin
         // There will always be at least 1 admin, hence totalBins >= 1.
-        let totalBins = Math.ceil(administrators.length / 4);
+        let totalBins = Math.ceil(newAdmins.length / 4);
         while (totalBins > 0) {
             buttons.push([]);
             totalBins--;
         } // Buttons is now [[], [], ...], containing [] equal to no of bins.
-        for (let i = 0; i < administrators.length; i++) {
-            const admin = administrators[i];
+        for (let i = 0; i < newAdmins.length; i++) {
+            const admin = chatAdministrators[i];
             const bin = Math.floor(i / 4);
             buttons[bin].push(Markup.callbackButton(admin.user.first_name, admin.user.id.toString()));
         }
-        buttons.push([]);
-        buttons[buttons.length-1].push(Markup.callbackButton('Exit!', 'exit'));
+        if(newAdmins.length > 0) {
+            buttons.push([]);
+            buttons[buttons.length - 1].push(Markup.callbackButton('Exit!', 'exit'));
 
-        let message = ctx.update.message;
+            let message = ctx.update.message;
 
-        ActiveSession.startSession('addAdministrator', response.id, message);
+            ActiveSession.startSession('addAdministrator', response.id, message);
 
-        Tools.replyInlineKeyboard(ctx, 'Who shall be the administrator for this group?', buttons);
+            Tools.replyInlineKeyboard(ctx, 'Who shall be the administrator for this group?', buttons);
+        }else{
+            Tools.replyHTML(ctx, "All chat administrators are added as Administrators.");
+        }
 
     }
 
