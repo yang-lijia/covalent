@@ -58,6 +58,9 @@ async function init() {
                 case 'addAdministrator':
                     registerTalent.addAdministrator(ctx);
                     break;
+                case 'deleteAdministrator':
+                    registerTalent.deleteAdministrator(ctx);
+                    break;
                 default:
                     break;
             }
