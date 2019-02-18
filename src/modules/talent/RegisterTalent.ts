@@ -5,7 +5,7 @@ import { Administrator } from '../../entity/Administrator';
 import ActiveSession from '../activeSession';
 
 import { CommandManager, CommandProcessor } from '../command';
-import Tools from '../tools';
+import { Reply } from '../tools';
 
 /**
  * A class to handle the general help command.
@@ -70,7 +70,7 @@ export default class RegisterTalent {
                 await getRepository(Chatgroup).save(group);
             } catch (exception) {
                 if (exception.message.indexOf('UNIQUE constraint failed') !== -1) {
-                    ctx.reply(Tools.removeTemplateLiteralIndents`Sorry, this chat group has already been registered! You can:
+                    ctx.reply( Reply.removeTemplateLiteralIndents`Sorry, this chat group has already been registered! You can:
                         view admins with /viewadmins
                         change admins with /changeadmins
                         unregister with /unregister`);
@@ -142,9 +142,9 @@ export default class RegisterTalent {
 
             ActiveSession.startSession('addAdministrator', response.id, message);
 
-            Tools.replyInlineKeyboard(ctx, 'Who shall be the administrator for this group?', buttons);
+            Reply.replyInlineKeyboard(ctx, 'Who shall be the administrator for this group?', buttons);
         }else{
-            Tools.replyHTML(ctx, "All chat administrators are added as Administrators.");
+            Reply.replyHTML(ctx, "All chat administrators are added as Administrators.");
         }
 
     }
@@ -234,9 +234,9 @@ export default class RegisterTalent {
 
             ActiveSession.startSession('deleteAdministrator', response.id, message);
 
-            Tools.replyInlineKeyboard(ctx, 'Delete user as administrator?', buttons);
+            Reply.replyInlineKeyboard(ctx, 'Delete user as administrator?', buttons);
         }else{
-            Tools.replyHTML(ctx, "There are no administrator for this chat.");
+            Reply.replyHTML(ctx, "There are no administrator for this chat.");
         }
     }
 

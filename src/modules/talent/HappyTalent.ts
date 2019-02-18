@@ -1,7 +1,7 @@
 import { ContextMessageUpdate, Markup } from 'telegraf';
 
 import { CommandManager, CommandProcessor } from '../command';
-import Tools from '../tools';
+import { Reply } from '../tools';
 
 /**
  * A class to handle the general help command.
@@ -43,7 +43,7 @@ export default class HappyTalent {
      */
     checkHappiness(ctx: ContextMessageUpdate) {
         // Todo: shouldn't be a command but rather a cronjob to display question
-        Tools.replyInlineKeyboard(ctx, 'Your happiness at work is...', [
+        Reply.replyInlineKeyboard(ctx, 'Your happiness at work is...', [
             Markup.callbackButton('😶 Normal', '0'),
             Markup.callbackButton('🙂 Happy', '1'),
             Markup.callbackButton('😄 Very Happy', '2'),

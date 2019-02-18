@@ -1,10 +1,7 @@
 import { ContextMessageUpdate, Markup } from 'telegraf';
-import { getRepository } from 'typeorm';
-import { Administrator } from '../../entity/Administrator';
-import { Chatgroup } from '../../entity/Chatgroup';
 
 import { CommandManager, CommandProcessor } from '../command';
-import Tools from '../tools';
+import { Reply, Access } from '../tools';
 
 export default class SurveyTalent {
 
@@ -49,7 +46,7 @@ export default class SurveyTalent {
      * @param ctx - Telegram bot context.
      */
     async manageSurvey(ctx: ContextMessageUpdate) {
-        Tools.replyInlineKeyboard(ctx, `Hi ${ctx.update.message.from.username} ! What you planning to do with your survey?`, [
+        Reply.replyInlineKeyboard(ctx, `Hi ${ctx.update.message.from.username} ! What you planning to do with your survey?`, [
             Markup.callbackButton('➕ Survey Type A', 'SURVEY_A'),
             Markup.callbackButton('➰ Survey Type B', 'SURVEY_B'),
             Markup.callbackButton('➖ Survey Type C', 'SURVEY_C'),
@@ -61,19 +58,9 @@ export default class SurveyTalent {
      * @param ctx - Telegram bot context.
      */
     async deleteSurvey(ctx: ContextMessageUpdate) {
-        const adminRepository = getRepository(Administrator);
-
          // Check if is group, and that invoker is admin of chatgroup
         if (ctx.chat.type === 'group') {
-            const admin = await adminRepository
-            .createQueryBuilder('administrator')
-            .leftJoinAndSelect('administrator.chatgroups', 'chatgroup', 'chatgroup.chatgroupId = :chatgroupId', {
-                chatgroupId: ctx.chat.id,
-            })
-            .where('administrator.userId = :userId', { userId: ctx.from.id })
-            .getOne();
-
-            if (admin && admin.chatgroups.length > 0) {
+            if (await Access.isAdmin(ctx)) {
                 // Delete a survey 
 
             } else {
@@ -90,20 +77,9 @@ export default class SurveyTalent {
      * @param ctx - Telegram bot context.
      */
     async addSurvey(ctx: ContextMessageUpdate) {
-        const adminRepository = getRepository(Administrator);
-        const chatgroupRepository = getRepository(Chatgroup);
-
         // Check if is group, and that invoker is admin of chatgroup
         if (ctx.chat.type === 'group') {
-            const admin = await adminRepository
-                .createQueryBuilder('administrator')
-                .leftJoinAndSelect('administrator.chatgroups', 'chatgroup', 'chatgroup.chatgroupId = :chatgroupId', {
-                    chatgroupId: ctx.chat.id,
-                })
-                .where('administrator.userId = :userId', { userId: ctx.from.id })
-                .getOne();
-
-            if (admin && admin.chatgroups.length > 0) {
+            if (await Access.isAdmin(ctx)) {
                 // Button list of available, default surveys, 3 in total
 
             } else {

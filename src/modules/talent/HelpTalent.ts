@@ -1,7 +1,7 @@
 import { Context, ContextMessageUpdate } from 'telegraf';
 
 import { CommandManager, CommandProcessor } from '../command';
-import Tools from '../tools';
+import { Reply } from '../tools';
 
 /**
  * A class to handle the general help command.
@@ -47,6 +47,6 @@ export default class HelpTalent {
             help = this.commandManager.getDetailHelp(command.param1);
         }
 
-        Tools.replyHTML(ctx, help);
+        Reply.replyHTML(ctx, help);
     }
 }
