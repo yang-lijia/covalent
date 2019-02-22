@@ -59,7 +59,7 @@ async function init() {
                     registerTalent.addAdministrator(ctx);
                     break;
                 case 'deleteAdministrator':
-                    registerTalent.deleteAdministrator(ctx);
+                    registerTalent.deleteAdministrator(ctx, true);
                     break;
                 default:
                     break;
@@ -77,6 +77,12 @@ async function init() {
           * ctx.editMessageText()
           * Need to think about how we gonna do this... Imagine if there is a lot of group and user
         */
+    });
+
+    bot.on('left_chat_member', (ctx) => {
+
+        registerTalent.deleteAdministrator(ctx, false);
+
     });
 }
 

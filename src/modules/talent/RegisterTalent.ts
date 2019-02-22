@@ -130,7 +130,7 @@ export default class RegisterTalent {
             totalBins--;
         } // Buttons is now [[], [], ...], containing [] equal to no of bins.
         for (let i = 0; i < newAdmins.length; i++) {
-            const admin = chatAdministrators[i];
+            const admin = newAdmins[i];
             const bin = Math.floor(i / 4);
             buttons[bin].push(Markup.callbackButton(admin.user.first_name, admin.user.id.toString()));
         }
@@ -199,7 +199,6 @@ export default class RegisterTalent {
     async showExistingAdministrator(ctx: ContextMessageUpdate){
 
         const response = await ctx.getChat();
-        const chatAdministrators = await ctx.getChatAdministrators();
 
         const buttons = [];
 
@@ -221,7 +220,7 @@ export default class RegisterTalent {
         } // Buttons is now [[], [], ...], containing [] equal to no of bins.
 
         for (let i = 0; i < currentAdmins.length; i++) {
-            const admin = chatAdministrators.find(chatAdministrator => currentAdmins[i].userId === chatAdministrator.user.id);
+            const admin = await ctx.getChatMember(currentAdmins[i].userId);
             const bin = Math.floor(i / 4);
             buttons[bin].push(Markup.callbackButton(admin.user.first_name, admin.user.id.toString()));
         }
@@ -240,49 +239,54 @@ export default class RegisterTalent {
         }
     }
 
-    async deleteAdministrator(ctx: ContextMessageUpdate){
+    async deleteAdministrator(ctx: ContextMessageUpdate, isCallback){
 
         //check if is exit; kill session
         //else we delete administrator
-        let callbackQuery = ctx.update.callback_query;
-        let chatgroupId = callbackQuery.message.chat.id;
+        let chatgroupId = isCallback ? ctx.update.callback_query.message.chat.id : ctx.update.message.chat.id;
 
-        if(callbackQuery.data === 'exit'){
-            ctx.answerCbQuery('Ok! Ready for next command!');
-            ctx.editMessageText('Done with deleting administrators!'); //remove the button
-            ActiveSession.endSession(chatgroupId);
+        if(isCallback && ctx.update.callback_query.data === 'exit'){
+                ctx.answerCbQuery('Ok! Ready for next command!');
+                ctx.editMessageText('Done with deleting administrators!'); //remove the button
+                ActiveSession.endSession(chatgroupId);
+
+
         }else{
-            let userId = parseInt(callbackQuery.data);
+            let userId = isCallback ? parseInt(ctx.update.callback_query.data) : ctx.update.message.left_chat_member.id;
 
             const administratorRepo = await getRepository(Administrator);
             const administrator = await administratorRepo
                 .createQueryBuilder('administrator')
                 .leftJoinAndSelect('administrator.chatgroups', 'chatgroup')
-                .where('administrator.userId = :userId', { userId: userId })
+                .where('administrator.userId = :userId', {userId: userId})
                 .getOne();
 
-            if(administrator && administrator.chatgroups.length>0){
-                if(administrator.chatgroups.length===1) {
+            if (administrator && administrator.chatgroups.length > 0) {
+                if (administrator.chatgroups.length === 1) {
                     await administratorRepo
                         .createQueryBuilder()
                         .delete()
                         .from(Administrator)
-                        .where("id = :id", { id: administrator.id })
+                        .where("id = :id", {id: administrator.id})
                         .execute();
-                }else{
+                } else {
                     let index = administrator.chatgroups.findIndex(chatgroup => chatgroup.chatgroupId === chatgroupId);
-                    if(index!=-1){
+                    if (index != -1) {
                         administrator.chatgroups.splice(index, 1);
                         await getRepository(Administrator).save(administrator);
                     }
                 }
-                ctx.answerCbQuery('Successfully remove user as an Administrator for this group!');
+                if(isCallback) {
+                    ctx.answerCbQuery('Successfully remove user as an Administrator for this group!');
+                }
 
-            }else{
-                ctx.answerCbQuery('User is no longer an administrator for any chatgroup.');
+            } else {
+                if(isCallback) {
+                    ctx.answerCbQuery('User is not an administrator.');
+                }
             }
-
         }
     }
+
 
 }
