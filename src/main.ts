@@ -5,7 +5,7 @@ import 'reflect-metadata';
 import { createConnection } from 'typeorm';
 import ActiveSession from './modules/activeSession';
 import { CommandManager, CommandProcessor } from './modules/command';
-import { DebugTalent, HappyTalent, HelpTalent, RegisterTalent, SurveyTalent } from './modules/talent';
+import { DebugTalent, HappyTalent, HelpTalent, RegisterTalent, SurveyTalent, AdminTalent } from './modules/talent';
 
 import Telegraf from 'telegraf';
 
@@ -18,6 +18,7 @@ const cmdManager = new CommandManager();
 const happyTalent = new HappyTalent(cmdManager, cmdProcessor);
 const helpTalent = new HelpTalent(cmdManager, cmdProcessor);
 const registerTalent = new RegisterTalent(cmdManager, cmdProcessor);
+const adminTalent = new AdminTalent(cmdManager, cmdProcessor);
 const surveyTalent = new SurveyTalent(cmdManager, cmdProcessor);
 if (process.env.NODE_ENV !== 'production') {
     const debugTalent = new DebugTalent(cmdManager, cmdProcessor);
@@ -56,10 +57,10 @@ async function init() {
             const action = ActiveSession.getSession(chatId).action;
             switch (action) {
                 case 'addAdministrator':
-                    registerTalent.addAdministrator(ctx);
+                    adminTalent.addAdministrator(ctx);
                     break;
                 case 'deleteAdministrator':
-                    registerTalent.deleteAdministrator(ctx, true);
+                    adminTalent.deleteAdministrator(ctx, true);
                     break;
                 default:
                     break;
@@ -81,7 +82,7 @@ async function init() {
 
     bot.on('left_chat_member', (ctx) => {
 
-        registerTalent.deleteAdministrator(ctx, false);
+        adminTalent.deleteAdministrator(ctx, false);
 
     });
 }
