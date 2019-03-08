@@ -36,11 +36,6 @@ async function init() {
 
     // Call this to register all the commands to the bot.
     cmdManager.registerToBot(bot);
-
-    // This starts the bot...
-    bot.start((ctx) => ctx.reply('Be happy and awesome. Help others to be happy and awesome! 😁'));
-    bot.startPolling();
-
     bot.on('callback_query', (ctx) => {
         const chatId = ctx.update.callback_query.message.chat.id;
 
@@ -81,10 +76,13 @@ async function init() {
     });
 
     bot.on('left_chat_member', (ctx) => {
-
-        adminTalent.deleteAdministrator(ctx, false);
-
+        adminTalent.deleteAdministrator(ctx, false);\
     });
+
+    // Handler for /start command
+    bot.start((ctx) => ctx.reply('Be happy and awesome. Help others to be happy and awesome! 😁'));
+    // Start polling for messages
+    bot.startPolling();
 }
 
 init();
