@@ -76,7 +76,7 @@ async function init() {
     });
 
     bot.on('left_chat_member', (ctx) => {
-        adminTalent.deleteAdministrator(ctx, false);\
+        adminTalent.deleteAdministrator(ctx, false);
     });
 
     // Handler for /start command
