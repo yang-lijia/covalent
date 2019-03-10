@@ -32,10 +32,13 @@ async function init() {
         console.log(JSON.stringify(connection.options, null, 2));
     } catch (error) {
         console.error(error);
+        return -1;
     }
 
     // Call this to register all the commands to the bot.
     cmdManager.registerToBot(bot);
+
+    // Handle callbacks (button presses)
     bot.on('callback_query', (ctx) => {
         const chatId = ctx.update.callback_query.message.chat.id;
 
@@ -75,12 +78,14 @@ async function init() {
         */
     });
 
+    // Bot needs to know when an admin leaves a group
     bot.on('left_chat_member', (ctx) => {
         adminTalent.deleteAdministrator(ctx, false);
     });
 
     // Handler for /start command
     bot.start((ctx) => ctx.reply('Be happy and awesome. Help others to be happy and awesome! 😁'));
+
     // Start polling for messages
     bot.startPolling();
 }

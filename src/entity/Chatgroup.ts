@@ -1,9 +1,7 @@
-
-import {Column, CreateDateColumn, Entity, ManyToMany, OneToMany,
-    PrimaryGeneratedColumn, Unique, UpdateDateColumn} from 'typeorm';
-import {Administrator} from './Administrator';
-import {Feedback} from './Feedback';
-import {Survey} from './Survey';
+import { Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm';
+import { Administrator } from './Administrator';
+import { Feedback } from './Feedback';
+import { Survey } from './Survey';
 
 @Entity()
 @Unique(['chatgroupId'])

@@ -3,11 +3,6 @@ import { getRepository } from 'typeorm';
 import { Chatgroup } from '../../entity/Chatgroup';
 import { CommandManager, CommandProcessor } from '../command';
 import { Reply } from '../tools';
-
-/**
- * A class to handle the general help command.
- */
-
 export default class RegisterTalent {
 
     private commandManager: CommandManager;
@@ -25,9 +20,9 @@ export default class RegisterTalent {
 
         // Add bot commands.
         this.commandManager.add(
-            'start',
-            'Start using Covalent',
-            'Start using Covalent',
+            'register',
+            'Register your group with Covalent',
+            'Register your group with Covalent',
             this.register.bind(this),
         );
         this.commandManager.add(

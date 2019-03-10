@@ -41,8 +41,8 @@ export default {
 
         return ctx.replyWithHTML(htmlText,
             Markup.removeKeyboard()
-                  .extra(Extra.inReplyTo(ctx.message.message_id)),
-            );
+                .extra(Extra.inReplyTo(ctx.message.message_id)),
+        );
     },
 
     /**
@@ -67,12 +67,10 @@ export default {
      * @param [options] - The list of options to display in the keyboard.
      */
     replyKeyboard(ctx: ContextMessageUpdate, htmlText: string, options: any) {
-
         //
         // There is a bug with the selective() option.
         // Selective() only works for phone apps. Desktop and Web versions will still show.
         //
-
         return ctx.replyWithHTML(htmlText, Markup
             .keyboard(options)
             .selective()
@@ -93,7 +91,15 @@ export default {
             Markup.selective()
                 .oneTime()
                 .resize()
-                .extra(Extra.HTML().markup( (m) => m.inlineKeyboard(options))),
+                .extra(Extra.HTML().markup((m) => m.inlineKeyboard(options))),
         );
+    },
+
+    /**
+     * Cancels operation, removes all message markup, ends current action session.
+     */
+    handleCancelledOperation(ctx: ContextMessageUpdate, operation: string, chatgroupId: number) {
+        ctx.answerCbQuery(`${operation} action cancelled`);
+        ctx.editMessageText(`${operation} action cancelled`);
     },
 };
