@@ -2,7 +2,7 @@ import { ContextMessageUpdate } from 'telegraf';
 import { getRepository } from 'typeorm';
 import { Administrator } from '../../entity/Administrator';
 import { Chatgroup } from '../../entity/Chatgroup';
-import ActiveSession from '../activeSession';
+import ActiveSession, { SessionAction } from '../activeSession';
 
 import { ChatMember } from 'telegram-typings';
 import { CommandManager, CommandProcessor } from '../command';
@@ -15,19 +15,9 @@ const Markup = require('telegraf/markup');
  */
 export default class AdminTalent {
     private commandManager: CommandManager;
-    private commandProcessor: CommandProcessor;
 
-    /**
-     * Class constructor to set some base variables
-     * @param commandManager - The object to manage bots commands.
-     * @param commandProcessor - The class to process the commands and parameters.
-     */
     constructor(commandManager: CommandManager, commandProcessor: CommandProcessor) {
-
         this.commandManager = commandManager;
-        this.commandProcessor = commandProcessor;
-
-        // Add bot commands.
         this.commandManager.add(
             'addadmin',
             'Add administrator to manage covalent',
@@ -91,14 +81,12 @@ export default class AdminTalent {
 
     async showChatAdministratorsToBeAdded(ctx: ContextMessageUpdate) {
         const chatInfo = await ctx.getChat();
-        // Need to check if chat is registered/unregistered.
         // A bot being added to a new group doesn't need to have /start to talk to the group.
         // Make registration transparent to user
         const chatgroupRepo = getRepository(Chatgroup);
-        const currentChatgroup = chatgroupRepo.findOne({
+        const currentChatgroup = await chatgroupRepo.findOne({
             chatgroupId: chatInfo.id,
         });
-
         // If group isn't registered yet, register it
         if (!currentChatgroup) {
             const newChatgroup = chatgroupRepo.create({
@@ -116,16 +104,17 @@ export default class AdminTalent {
             .where('chatgroup.chatgroupId = :chatgroupId', { chatgroupId: chatInfo.id })
             .getMany(); // Returns [] if no admins registered with chatgroup
 
-        const newAdmins = chatAdministrators
-            .filter((chatAdministrator) =>
-                !currentAdmins.find((currentAdmin) =>
-                    currentAdmin.userId === chatAdministrator.user.id));
-        if (newAdmins.length > 0) {
-            const buttons = this.buildAdminButtons(newAdmins);
+        const addableAdmins = chatAdministrators
+            .filter((chatAdministrator) => {
+                return !currentAdmins.find((currentAdmin) => currentAdmin.userId === chatAdministrator.user.id);
+            });
+
+        if (addableAdmins.length > 0) {
+            const buttons = this.buildAdminButtons(addableAdmins);
 
             const message = ctx.update.message;
 
-            ActiveSession.startSession('addAdministrator', chatInfo.id, message);
+            ActiveSession.startSession(SessionAction.AddAdmin, chatInfo.id, message);
 
             // Use a one-time keyboard to add the admin.
             Reply.replyInlineKeyboard(ctx, 'Who shall be a Covalent administrator for this group?', buttons);
@@ -134,20 +123,15 @@ export default class AdminTalent {
         }
     }
 
-    /**
-     * Adds administrator to a registered chat group
-     */
     async addAdministrator(ctx: ContextMessageUpdate) {
-        // check if is exit; kill session
-        // else we add administrator
         const callbackQuery = ctx.update.callback_query;
         const chatgroupId = callbackQuery.message.chat.id;
 
-        // End the session first
+        // End session whether we succeed or fail; no retries allowed
         ActiveSession.endSession(chatgroupId);
 
         if (callbackQuery.data === 'exit') {
-            Reply.handleCancelledOperation(ctx, 'Add administrator', chatgroupId);
+            Reply.handleCancelledOperation(ctx, SessionAction.AddAdmin);
             return;
         }
 
@@ -159,25 +143,25 @@ export default class AdminTalent {
             chatgroupId,
         });
         if (!chatgroup) {
-            throw new Error('Chat group is not registered with Covalent.');
+            throw new Error('Chat group is not registered with Covalent. Did the chat group ID change?');
         }
 
         const administratorRepo = getRepository(Administrator);
-        const administrator = await administratorRepo.findOne({
+        const adminToBeAdded = await administratorRepo.findOne({
             userId,
         });
 
-        if (administrator) {
-            const found = administrator.chatgroups.find((group) => {
+        if (adminToBeAdded) {
+            const alreadyAdminOfChatgroup = adminToBeAdded.chatgroups.find((group) => {
                 return group.chatgroupId === chatgroupId;
             });
-            if (found) {
+            if (alreadyAdminOfChatgroup) {
                 ctx.answerCbQuery(`${newAdminDetails.user.first_name} is already an administrator for this group!`);
                 ctx.editMessageText(`${newAdminDetails.user.first_name} is already an administrator for this group!`);
                 return;
             } else {
-                administrator.chatgroups.push(chatgroup);
-                await administratorRepo.save(administrator);
+                adminToBeAdded.chatgroups.push(chatgroup);
+                await administratorRepo.save(adminToBeAdded);
             }
         } else {
             const newAdministrator = new Administrator();
@@ -198,14 +182,14 @@ export default class AdminTalent {
             .where('chatgroup.chatgroupId = :chatgroupId', { chatgroupId: chatInfo.id })
             .getMany();
         if (currentAdmins.length > 0) {
-            const currentAdminDetails = await Promise.all(currentAdmins.map(async (admin) => {
+            const currentAdminDetails: ChatMember[] = await Promise.all(currentAdmins.map(async (admin) => {
                 return await ctx.getChatMember(admin.userId);
             }));
             const buttons = this.buildAdminButtons(currentAdminDetails);
 
             const message = ctx.update.message;
 
-            ActiveSession.startSession('deleteAdministrator', chatInfo.id, message);
+            ActiveSession.startSession(SessionAction.RemoveAdmin, chatInfo.id, message);
 
             Reply.replyInlineKeyboard(ctx, 'Remove a user as a Covalent administrator', buttons);
         } else {
@@ -213,15 +197,64 @@ export default class AdminTalent {
         }
     }
 
-    async deleteAdministrator(ctx: ContextMessageUpdate, isCallback: boolean) {
-        // check if is exit; kill session
-        // else we delete administrator
+    async removeAdministratorButtonCallback(ctx: ContextMessageUpdate): Promise<void> {
+        const chatgroupId = ctx.update.callback_query.message.chat.id;
+        ActiveSession.endSession(chatgroupId);
+        if (ctx.update.callback_query.data === 'exit') {
+            Reply.handleCancelledOperation(ctx, SessionAction.RemoveAdmin);
+            return;
+        }
+        const adminUserId = Number.parseInt(ctx.update.callback_query.data, 10);
+        const adminInfo = await ctx.getChatMember(adminUserId);
+        try {
+            const removedAdmin = await this.removeAdministrator(chatgroupId, adminUserId);
+            ctx.answerCbQuery(`${adminInfo.user.first_name} is no longer a Covalent administrator.`);
+            ctx.editMessageText(`${adminInfo.user.first_name} is no longer a Covalent administrator.`);
+        } catch (exception) {
+            ctx.answerCbQuery(`Error removing administrator: ${exception.message}`);
+            ctx.editMessageText(`Error removing administrator: ${exception.message}`);
+        }
+    }
+
+    async removeAdministratorOnLeftChat(ctx: ContextMessageUpdate): Promise<void> {
+        const chatgroupId = ctx.update.message.chat.id;
+        const adminUserId = ctx.update.message.left_chat_member.id;
+        try {
+            const removedAdmin = await this.removeAdministrator(chatgroupId, adminUserId);
+        } catch (exception) {
+            // todo: log, send alert?
+        }
+    }
+
+    // Returns admin that was removed, or throws error
+    private async removeAdministrator(chatgroupId: number, adminUserId: number): Promise<Administrator> {
+        const administratorRepo = getRepository(Administrator);
+        const administrator = await administratorRepo
+            .findOne({
+                userId: adminUserId,
+            });
+        if (!administrator) { throw new Error(`Could not find admin in database when trying to remove them from chatgroup`); }
+        const chatgroupIndex = administrator.chatgroups
+            .findIndex((chatgroup) => chatgroup.chatgroupId === chatgroupId);
+        if (chatgroupIndex !== -1) {
+            if (administrator.chatgroups.length === 1) {
+                return await administratorRepo.remove(administrator);
+            }
+            administrator.chatgroups.splice(chatgroupIndex, 1);
+            return await administratorRepo.save(administrator);
+        } else {
+            throw new Error('Admin to be removed was not actually an admin for given chatgroup');
+        }
+    }
+
+    /*
+    async removeAdministrator(ctx: ContextMessageUpdate, isCallback: boolean) {
         const chatgroupId = isCallback ? ctx.update.callback_query.message.chat.id : ctx.update.message.chat.id;
-        // End the session first
+
         ActiveSession.endSession(chatgroupId);
 
         if (isCallback && ctx.update.callback_query.data === 'exit') {
-            Reply.handleCancelledOperation(ctx, 'Delete administrator', chatgroupId);
+            Reply.handleCancelledOperation(ctx, SessionAction.RemoveAdmin);
             return;
         }
         const userId = isCallback ?
@@ -255,4 +288,5 @@ export default class AdminTalent {
             }
         }
     }
+    */
 }

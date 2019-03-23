@@ -3,7 +3,7 @@ dotenv.config();
 
 import 'reflect-metadata';
 import { createConnection } from 'typeorm';
-import ActiveSession from './modules/activeSession';
+import ActiveSession, {SessionAction} from './modules/activeSession';
 import { CommandManager, CommandProcessor } from './modules/command';
 import { DebugTalent, HappyTalent, HelpTalent, RegisterTalent, SurveyTalent, AdminTalent } from './modules/talent';
 
@@ -39,7 +39,7 @@ async function init() {
     cmdManager.registerToBot(bot);
 
     // Handle callbacks (button presses)
-    bot.on('callback_query', (ctx) => {
+    bot.on('callback_query', async (ctx) => {
         const chatId = ctx.update.callback_query.message.chat.id;
 
         const currentSession = ActiveSession.getSession(chatId);
@@ -54,11 +54,11 @@ async function init() {
         try {
             const action = ActiveSession.getSession(chatId).action;
             switch (action) {
-                case 'addAdministrator':
-                    adminTalent.addAdministrator(ctx);
+                case SessionAction.AddAdmin:
+                    await adminTalent.addAdministrator(ctx);
                     break;
-                case 'deleteAdministrator':
-                    adminTalent.deleteAdministrator(ctx, true);
+                case SessionAction.RemoveAdmin:
+                    await adminTalent.removeAdministratorButtonCallback(ctx);
                     break;
                 default:
                     break;
@@ -79,8 +79,8 @@ async function init() {
     });
 
     // Bot needs to know when an admin leaves a group
-    bot.on('left_chat_member', (ctx) => {
-        adminTalent.deleteAdministrator(ctx, false);
+    bot.on('left_chat_member', async (ctx) => {
+        await adminTalent.removeAdministratorOnLeftChat(ctx);
     });
 
     // Handler for /start command

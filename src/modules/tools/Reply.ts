@@ -1,4 +1,5 @@
 import { ContextMessageUpdate } from 'telegraf';
+import { SessionAction } from '../activeSession';
 
 const Markup = require('telegraf/markup');
 const Extra = require('telegraf/extra');
@@ -98,7 +99,7 @@ export default {
     /**
      * Cancels operation, removes all message markup, ends current action session.
      */
-    handleCancelledOperation(ctx: ContextMessageUpdate, operation: string, chatgroupId: number) {
+    handleCancelledOperation(ctx: ContextMessageUpdate, operation: SessionAction) {
         ctx.answerCbQuery(`${operation} action cancelled`);
         ctx.editMessageText(`${operation} action cancelled`);
     },
