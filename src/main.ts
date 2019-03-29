@@ -75,8 +75,14 @@ async function init() {
         */
     });
 
+    //Handler to delete administrator if chat member leave the group
     bot.on('left_chat_member', (ctx) => {
         adminTalent.deleteAdministrator(ctx, false);
+    });
+
+    //Handler to update the group id if group becomes super group
+    bot.on('migrate_to_chat_id', (ctx) => {
+        adminTalent.updateGroupId(ctx);
     });
 
     // Handler for /start command
