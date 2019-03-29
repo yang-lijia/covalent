@@ -1,10 +1,10 @@
 import { ContextMessageUpdate } from 'telegraf';
+import { ExtraEditMessage, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
+import { CallbackQuery, Chat, ChatMember, InlineKeyboardMarkup } from 'telegram-typings';
 import { getRepository } from 'typeorm';
 import { Administrator } from '../../entity/Administrator';
 import { Chatgroup } from '../../entity/Chatgroup';
 import ActiveSession, { SessionAction } from '../activeSession';
-
-import { ChatMember } from 'telegram-typings';
 import { CommandManager, CommandProcessor } from '../command';
 import { Reply } from '../tools';
 
@@ -38,7 +38,7 @@ export default class AdminTalent {
         );
     }
 
-    private buildAdminButtons(adminList: ChatMember[]) {
+    private buildAdminButtons(adminList: ChatMember[]): InlineKeyboardMarkup {
         // We want 4 buttons per row for admin
         // There will always be at least 1 admin, hence totalBins >= 1.
         const buttons = [];
@@ -55,7 +55,9 @@ export default class AdminTalent {
         }
         buttons.push([]);
         buttons[buttons.length - 1].push(Markup.callbackButton('Exit!', 'exit'));
-        return buttons;
+        return {
+            inline_keyboard: buttons,
+        };
     }
 
     async showChatAdministrators(ctx: ContextMessageUpdate) {
@@ -110,21 +112,25 @@ export default class AdminTalent {
             });
 
         if (addableAdmins.length > 0) {
-            const buttons = this.buildAdminButtons(addableAdmins);
+            const buttons: InlineKeyboardMarkup = this.buildAdminButtons(addableAdmins);
+            const addAdminKeyboardMarkup: ExtraReplyMessage = {
+                reply_markup: buttons,
+            };
 
             const message = ctx.update.message;
 
             ActiveSession.startSession(SessionAction.AddAdmin, chatInfo.id, message);
 
             // Use a one-time keyboard to add the admin.
-            Reply.replyInlineKeyboard(ctx, 'Who shall be a Covalent administrator for this group?', buttons);
+            ctx.reply('Who shall be a Covalent administrator for this group?', addAdminKeyboardMarkup);
         } else {
             ctx.reply('All chat administrators are already Covalent administrators');
         }
     }
 
     async addAdministrator(ctx: ContextMessageUpdate) {
-        const callbackQuery = ctx.update.callback_query;
+        const chatInfo: Chat = await ctx.getChat();
+        const callbackQuery: CallbackQuery = ctx.update.callback_query;
         const chatgroupId = callbackQuery.message.chat.id;
 
         // End session whether we succeed or fail; no retries allowed
@@ -169,8 +175,30 @@ export default class AdminTalent {
             newAdministrator.chatgroups = [chatgroup];
             await administratorRepo.save(newAdministrator);
         }
+
         ctx.answerCbQuery(`Added ${newAdminDetails.user.first_name} as a Covalent admin!`);
-        ctx.editMessageText(`Added ${newAdminDetails.user.first_name} as a Covalent admin!`);
+
+        const chatAdministrators = await ctx.getChatAdministrators();
+        const currentAdmins = await administratorRepo
+            .createQueryBuilder('administrator')
+            .leftJoinAndSelect('administrator.chatgroups', 'chatgroup')
+            .where('chatgroup.chatgroupId = :chatgroupId', { chatgroupId: chatInfo.id })
+            .getMany(); // Returns [] if no admins registered with chatgroup
+
+        const addableAdmins = chatAdministrators
+            .filter((chatAdministrator) => {
+                return !currentAdmins.find((currentAdmin) => currentAdmin.userId === chatAdministrator.user.id);
+            });
+
+        if (addableAdmins.length > 0) {
+            const buttons: InlineKeyboardMarkup = this.buildAdminButtons(addableAdmins);
+            const addAdminKeyboardMarkup: ExtraEditMessage = {
+                reply_markup: buttons,
+            };
+            ctx.editMessageText('Who shall be a Covalent administrator for this group?', addAdminKeyboardMarkup);
+        } else {
+            ctx.editMessageText('All chat administrators are already Covalent administrators');
+        }
     }
 
     async showExistingAdministratorsToBeRemoved(ctx: ContextMessageUpdate) {
@@ -185,13 +213,16 @@ export default class AdminTalent {
             const currentAdminDetails: ChatMember[] = await Promise.all(currentAdmins.map(async (admin) => {
                 return await ctx.getChatMember(admin.userId);
             }));
-            const buttons = this.buildAdminButtons(currentAdminDetails);
+            const buttons: InlineKeyboardMarkup = this.buildAdminButtons(currentAdminDetails);
+            const removeAdminKeyboardMarkup: ExtraReplyMessage = {
+                reply_markup: buttons,
+            };
 
             const message = ctx.update.message;
 
             ActiveSession.startSession(SessionAction.RemoveAdmin, chatInfo.id, message);
 
-            Reply.replyInlineKeyboard(ctx, 'Remove a user as a Covalent administrator', buttons);
+            ctx.reply('Remove a user as a Covalent administrator', removeAdminKeyboardMarkup);
         } else {
             ctx.reply('There are no administrators registered for this chat. Please use /addadmin to add them!');
         }
