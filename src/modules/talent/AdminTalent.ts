@@ -1,22 +1,17 @@
-import { ContextMessageUpdate } from 'telegraf';
+import { ContextMessageUpdate, Markup } from 'telegraf';
 import { ExtraEditMessage, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
-import { CallbackQuery, Chat, ChatMember, InlineKeyboardMarkup } from 'telegram-typings';
-import { getRepository } from 'typeorm';
+import { CallbackQuery, Chat, ChatMember, InlineKeyboardMarkup, InlineKeyboardButton, Message } from 'telegram-typings';
+import { getRepository, Repository } from 'typeorm';
 import { Administrator } from '../../entity/Administrator';
 import { Chatgroup } from '../../entity/Chatgroup';
 import ActiveSession, { SessionAction } from '../activeSession';
-import { CommandManager, CommandProcessor } from '../command';
+import { CommandManager } from '../command';
 import { Reply } from '../tools';
 
-const Markup = require('telegraf/markup');
-
-/**
- * A class to handle the general help command.
- */
 export default class AdminTalent {
     private commandManager: CommandManager;
 
-    constructor(commandManager: CommandManager, commandProcessor: CommandProcessor) {
+    constructor(commandManager: CommandManager) {
         this.commandManager = commandManager;
         this.commandManager.add(
             'addadmin',
@@ -41,7 +36,7 @@ export default class AdminTalent {
     private buildAdminButtons(adminList: ChatMember[]): InlineKeyboardMarkup {
         // We want 4 buttons per row for admin
         // There will always be at least 1 admin, hence totalBins >= 1.
-        const buttons = [];
+        const buttons: InlineKeyboardButton[][] = [];
         let totalBins = Math.ceil(adminList.length / 4);
         while (totalBins > 0) {
             buttons.push([]);
@@ -51,7 +46,8 @@ export default class AdminTalent {
         for (let i = 0; i < adminList.length; i++) {
             const admin = adminList[i];
             const bin = Math.floor(i / 4);
-            buttons[bin].push(Markup.callbackButton(admin.user.first_name, admin.user.id.toString()));
+            const button: InlineKeyboardButton = Markup.callbackButton(admin.user.first_name, admin.user.id.toString());
+            buttons[bin].push(button);
         }
         buttons.push([]);
         buttons[buttons.length - 1].push(Markup.callbackButton('Exit!', 'exit'));
@@ -60,10 +56,45 @@ export default class AdminTalent {
         };
     }
 
+    // Returns admin that was removed, or throws error
+    private async removeAdministrator(chatgroupId: number, adminUserId: number): Promise<Administrator> {
+        const administratorRepo = getRepository(Administrator);
+        const administrator = await administratorRepo
+            .findOne({
+                userId: adminUserId,
+            });
+        if (!administrator) { throw new Error(`Could not find admin in database when trying to remove them from chatgroup`); }
+        const chatgroupIndex = administrator.chatgroups
+            .findIndex((chatgroup) => chatgroup.chatgroupId === chatgroupId);
+        if (chatgroupIndex !== -1) {
+            if (administrator.chatgroups.length === 1) {
+                return await administratorRepo.remove(administrator);
+            }
+            administrator.chatgroups.splice(chatgroupIndex, 1);
+            return await administratorRepo.save(administrator);
+        } else {
+            throw new Error('Admin to be removed was not actually an admin for given chatgroup');
+        }
+    }
+
+    private async getAddableAdmins(ctx: ContextMessageUpdate): Promise<ChatMember[]> {
+        const chatAdministrators: ChatMember[] = await ctx.getChatAdministrators();
+        const adminRepository: Repository<Administrator> = getRepository(Administrator);
+        const currentAdmins: Administrator[] = await adminRepository
+            .createQueryBuilder('administrator')
+            .leftJoinAndSelect('administrator.chatgroups', 'chatgroup')
+            .where('chatgroup.chatgroupId = :chatgroupId', { chatgroupId: ctx.chat.id })
+            .getMany(); // Returns [] if no admins registered with chatgroup
+        return chatAdministrators
+            .filter((chatAdministrator) => {
+                return !currentAdmins.find((currentAdmin) => currentAdmin.userId === chatAdministrator.user.id);
+            });
+    }
+
     async showChatAdministrators(ctx: ContextMessageUpdate) {
-        const chatInfo = await ctx.getChat();
-        const adminRepository = getRepository(Administrator);
-        const currentAdmins = await adminRepository
+        const chatInfo: Chat = await ctx.getChat();
+        const adminRepository: Repository<Administrator> = getRepository(Administrator);
+        const currentAdmins: Administrator[] = await adminRepository
             .createQueryBuilder('administrator')
             .leftJoinAndSelect('administrator.chatgroups', 'chatgroup')
             .where('chatgroup.chatgroupId = :chatgroupId', { chatgroupId: chatInfo.id })
@@ -82,7 +113,7 @@ export default class AdminTalent {
     }
 
     async showChatAdministratorsToBeAdded(ctx: ContextMessageUpdate) {
-        const chatInfo = await ctx.getChat();
+        const chatInfo: Chat = await ctx.getChat();
         // A bot being added to a new group doesn't need to have /start to talk to the group.
         // Make registration transparent to user
         const chatgroupRepo = getRepository(Chatgroup);
@@ -98,18 +129,7 @@ export default class AdminTalent {
             await chatgroupRepo.save(newChatgroup);
         }
 
-        const chatAdministrators = await ctx.getChatAdministrators();
-        const adminRepository = getRepository(Administrator);
-        const currentAdmins = await adminRepository
-            .createQueryBuilder('administrator')
-            .leftJoinAndSelect('administrator.chatgroups', 'chatgroup')
-            .where('chatgroup.chatgroupId = :chatgroupId', { chatgroupId: chatInfo.id })
-            .getMany(); // Returns [] if no admins registered with chatgroup
-
-        const addableAdmins = chatAdministrators
-            .filter((chatAdministrator) => {
-                return !currentAdmins.find((currentAdmin) => currentAdmin.userId === chatAdministrator.user.id);
-            });
+        const addableAdmins: ChatMember[] = await this.getAddableAdmins(ctx);
 
         if (addableAdmins.length > 0) {
             const buttons: InlineKeyboardMarkup = this.buildAdminButtons(addableAdmins);
@@ -117,7 +137,7 @@ export default class AdminTalent {
                 reply_markup: buttons,
             };
 
-            const message = ctx.update.message;
+            const message: Message = ctx.update.message;
 
             ActiveSession.startSession(SessionAction.AddAdmin, chatInfo.id, message);
 
@@ -129,15 +149,12 @@ export default class AdminTalent {
     }
 
     async addAdministrator(ctx: ContextMessageUpdate) {
-        const chatInfo: Chat = await ctx.getChat();
         const callbackQuery: CallbackQuery = ctx.update.callback_query;
-        const chatgroupId = callbackQuery.message.chat.id;
-
-        // End session whether we succeed or fail; no retries allowed
-        ActiveSession.endSession(chatgroupId);
+        const chatgroupId: number = callbackQuery.message.chat.id;
 
         if (callbackQuery.data === 'exit') {
             Reply.handleCancelledOperation(ctx, SessionAction.AddAdmin);
+            ActiveSession.endSession(chatgroupId);
             return;
         }
 
@@ -178,17 +195,7 @@ export default class AdminTalent {
 
         ctx.answerCbQuery(`Added ${newAdminDetails.user.first_name} as a Covalent admin!`);
 
-        const chatAdministrators = await ctx.getChatAdministrators();
-        const currentAdmins = await administratorRepo
-            .createQueryBuilder('administrator')
-            .leftJoinAndSelect('administrator.chatgroups', 'chatgroup')
-            .where('chatgroup.chatgroupId = :chatgroupId', { chatgroupId: chatInfo.id })
-            .getMany(); // Returns [] if no admins registered with chatgroup
-
-        const addableAdmins = chatAdministrators
-            .filter((chatAdministrator) => {
-                return !currentAdmins.find((currentAdmin) => currentAdmin.userId === chatAdministrator.user.id);
-            });
+        const addableAdmins = await this.getAddableAdmins(ctx);
 
         if (addableAdmins.length > 0) {
             const buttons: InlineKeyboardMarkup = this.buildAdminButtons(addableAdmins);
@@ -199,6 +206,7 @@ export default class AdminTalent {
         } else {
             ctx.editMessageText('All chat administrators are already Covalent administrators');
         }
+        ActiveSession.endSession(chatgroupId);
     }
 
     async showExistingAdministratorsToBeRemoved(ctx: ContextMessageUpdate) {
@@ -257,34 +265,13 @@ export default class AdminTalent {
         }
     }
 
-    // Returns admin that was removed, or throws error
-    private async removeAdministrator(chatgroupId: number, adminUserId: number): Promise<Administrator> {
-        const administratorRepo = getRepository(Administrator);
-        const administrator = await administratorRepo
-            .findOne({
-                userId: adminUserId,
-            });
-        if (!administrator) { throw new Error(`Could not find admin in database when trying to remove them from chatgroup`); }
-        const chatgroupIndex = administrator.chatgroups
-            .findIndex((chatgroup) => chatgroup.chatgroupId === chatgroupId);
-        if (chatgroupIndex !== -1) {
-            if (administrator.chatgroups.length === 1) {
-                return await administratorRepo.remove(administrator);
-            }
-            administrator.chatgroups.splice(chatgroupIndex, 1);
-            return await administratorRepo.save(administrator);
-        } else {
-            throw new Error('Admin to be removed was not actually an admin for given chatgroup');
-        }
-    }
-
     async updateGroupId(ctx: ContextMessageUpdate) {
-        let oldChatgroupId = ctx.update.message.chat.id;
-        let newChatgroupId = ctx.update.message.migrate_to_chat_id;
+        const oldChatgroupId = ctx.update.message.chat.id;
+        const newChatgroupId = ctx.update.message.migrate_to_chat_id;
 
         const chatgroupRepo = await getRepository(Chatgroup);
         const chatgroup = await chatgroupRepo.findOne({
-            chatgroupId: oldChatgroupId
+            chatgroupId: oldChatgroupId,
         });
 
         if (chatgroup) {
@@ -292,47 +279,4 @@ export default class AdminTalent {
             await getRepository(Chatgroup).save(chatgroup);
         }
     }
-
-    /*
-    async removeAdministrator(ctx: ContextMessageUpdate, isCallback: boolean) {
-        const chatgroupId = isCallback ? ctx.update.callback_query.message.chat.id : ctx.update.message.chat.id;
-
-        ActiveSession.endSession(chatgroupId);
-
-        if (isCallback && ctx.update.callback_query.data === 'exit') {
-            Reply.handleCancelledOperation(ctx, SessionAction.RemoveAdmin);
-            return;
-        }
-        const userId = isCallback ?
-            Number.parseInt(ctx.update.callback_query.data, 10) :
-            ctx.update.message.left_chat_member.id;
-        const userInfo = await ctx.getChatMember(userId);
-        const administratorRepo = getRepository(Administrator);
-        const administrator = await administratorRepo.findOne({
-            userId,
-        });
-
-        if (administrator && administrator.chatgroups.length > 0) {
-            if (administrator.chatgroups.length === 1 &&
-                administrator.chatgroups.find((chatgroup) => chatgroup.chatgroupId === chatgroupId)) {
-                await administratorRepo.remove(administrator);
-            } else {
-                const index = administrator.chatgroups.findIndex((chatgroup) => chatgroup.chatgroupId === chatgroupId);
-                if (index !== -1) {
-                    administrator.chatgroups.splice(index, 1);
-                    await administratorRepo.save(administrator);
-                }
-            }
-            if (isCallback) {
-                ctx.answerCbQuery(`${userInfo.user.first_name} is no longer a Covalent administrator.`);
-                ctx.editMessageText(`${userInfo.user.first_name} is no longer a Covalent administrator.`);
-            }
-        } else {
-            if (isCallback) {
-                ctx.answerCbQuery(`${userInfo.user.first_name} is not a Covalent administrator.`);
-                ctx.editMessageText(`${userInfo.user.first_name} is not a Covalent administrator.`);
-            }
-        }
-    }
-    */
 }

@@ -7,7 +7,7 @@ import ActiveSession, {SessionAction} from './modules/activeSession';
 import { CommandManager, CommandProcessor } from './modules/command';
 import { DebugTalent, HappyTalent, HelpTalent, RegisterTalent, SurveyTalent, AdminTalent } from './modules/talent';
 
-import Telegraf from 'telegraf';
+import Telegraf, { ContextMessageUpdate } from 'telegraf';
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -18,7 +18,7 @@ const cmdManager = new CommandManager();
 const happyTalent = new HappyTalent(cmdManager, cmdProcessor);
 const helpTalent = new HelpTalent(cmdManager, cmdProcessor);
 const registerTalent = new RegisterTalent(cmdManager, cmdProcessor);
-const adminTalent = new AdminTalent(cmdManager, cmdProcessor);
+const adminTalent = new AdminTalent(cmdManager);
 const surveyTalent = new SurveyTalent(cmdManager, cmdProcessor);
 if (process.env.NODE_ENV !== 'production') {
     const debugTalent = new DebugTalent(cmdManager, cmdProcessor);
@@ -39,7 +39,7 @@ async function init() {
     cmdManager.registerToBot(bot);
 
     // Handle callbacks (button presses)
-    bot.on('callback_query', async (ctx) => {
+    bot.on('callback_query', async (ctx: ContextMessageUpdate) => {
         const chatId = ctx.update.callback_query.message.chat.id;
 
         const currentSession = ActiveSession.getSession(chatId);
@@ -64,6 +64,7 @@ async function init() {
                     break;
             }
         } catch (exception) {
+            ActiveSession.endSession(ctx.callbackQuery.message.chat.id);
             console.error(exception);
         }
 
