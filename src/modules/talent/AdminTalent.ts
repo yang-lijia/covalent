@@ -247,6 +247,21 @@ export default class AdminTalent {
         }
     }
 
+    async updateGroupId(ctx: ContextMessageUpdate) {
+        let oldChatgroupId = ctx.update.message.chat.id;
+        let newChatgroupId = ctx.update.message.migrate_to_chat_id;
+
+        const chatgroupRepo = await getRepository(Chatgroup);
+        const chatgroup = await chatgroupRepo.findOne({
+            chatgroupId: oldChatgroupId
+        });
+
+        if (chatgroup) {
+            chatgroup.chatgroupId = newChatgroupId;
+            await getRepository(Chatgroup).save(chatgroup);
+        }
+    }
+
     /*
     async removeAdministrator(ctx: ContextMessageUpdate, isCallback: boolean) {
         const chatgroupId = isCallback ? ctx.update.callback_query.message.chat.id : ctx.update.message.chat.id;

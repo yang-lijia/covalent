@@ -83,6 +83,11 @@ async function init() {
         await adminTalent.removeAdministratorOnLeftChat(ctx);
     });
 
+    // Handler to update the group id if group becomes super group
+    bot.on('migrate_to_chat_id', (ctx) => {
+        adminTalent.updateGroupId(ctx);
+    });
+
     // Handler for /start command
     bot.start((ctx) => ctx.reply('Be happy and awesome. Help others to be happy and awesome! 😁'));
 
