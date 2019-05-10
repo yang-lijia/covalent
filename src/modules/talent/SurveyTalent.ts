@@ -1,7 +1,8 @@
 import { ContextMessageUpdate, Markup } from 'telegraf';
-
+import { getRepository } from 'typeorm';
+import { Survey } from '../../entity/Survey';
 import { CommandManager, CommandProcessor } from '../command';
-import { Reply, Access } from '../tools';
+import { Access, Reply } from '../tools';
 
 export default class SurveyTalent {
 
@@ -34,23 +35,30 @@ export default class SurveyTalent {
         );
 
         this.commandManager.add(
-            'managesurvey',
-            'Manage a survey',
-            'Manage a survey',
-            this.manageSurvey.bind(this),
+            'listsurvey',
+            'List surveys',
+            'List surveys',
+            this.listSurvey.bind(this),
         );
     }
 
-    /**
-     * Add a survey for a particular chat group
-     * @param ctx - Telegram bot context.
-     */
-    async manageSurvey(ctx: ContextMessageUpdate) {
-        Reply.replyInlineKeyboard(ctx, `Hi ${ctx.update.message.from.username} ! What you planning to do with your survey?`, [
-            Markup.callbackButton('➕ Survey Type A', 'SURVEY_A'),
-            Markup.callbackButton('➰ Survey Type B', 'SURVEY_B'),
-            Markup.callbackButton('➖ Survey Type C', 'SURVEY_C'),
-        ]);
+     /**
+      * List Surveys for a particular chat group
+      * @param ctx - Telegram bot context.
+      */
+    async listSurvey(ctx: ContextMessageUpdate) {
+
+        if (ctx.chat.type === 'group') {
+            if (await Access.isAdmin(ctx)) {
+                 const surveyRepository = await getRepository(Survey);
+                 // TODO to form query to retrieve surveys based on group id
+
+            } else {
+                ctx.reply('Sorry, you are not a survey admin of this chat group!');
+            }
+        } else {
+            ctx.reply('Sorry, you are not inside a chatgroup!');
+        }
     }
 
     /**
@@ -61,7 +69,7 @@ export default class SurveyTalent {
          // Check if is group, and that invoker is admin of chatgroup
         if (ctx.chat.type === 'group') {
             if (await Access.isAdmin(ctx)) {
-                // Delete a survey 
+                // Delete a survey
 
             } else {
                 ctx.reply('Sorry, you are not a survey admin of this chat group!');
@@ -77,14 +85,17 @@ export default class SurveyTalent {
      * @param ctx - Telegram bot context.
      */
     async addSurvey(ctx: ContextMessageUpdate) {
+         ctx.reply('Cleanse');
         // Check if is group, and that invoker is admin of chatgroup
-        if (ctx.chat.type === 'group') {
+         if (ctx.chat.type === 'group') {
             if (await Access.isAdmin(ctx)) {
                 // Button list of available, default surveys, 3 in total
 
             } else {
                 ctx.reply('Sorry, you are not a survey admin of this chat group!');
             }
+        } else {
+            ctx.reply('Sorry, you are not inside a chatgroup!');
         }
         // Support custom surveys?
     }
