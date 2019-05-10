@@ -1,4 +1,4 @@
-import {Column, CreateDateColumn, Entity, JoinTable, Unique, ManyToMany, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
+import {Column, CreateDateColumn, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn} from 'typeorm';
 import {Chatgroup} from './Chatgroup';
 
 @Entity()
@@ -13,7 +13,6 @@ export class Administrator {
     @ManyToMany((type) => Chatgroup, (chatgroup) => chatgroup.administrators, {
         eager: true,
     })
-
     @JoinTable()
     chatgroups: Chatgroup[];
 

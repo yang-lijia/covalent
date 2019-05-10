@@ -1,245 +1,282 @@
 import { ContextMessageUpdate, Markup } from 'telegraf';
-import { getRepository } from 'typeorm';
-import { Chatgroup } from '../../entity/Chatgroup';
+import { ExtraEditMessage, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
+import { CallbackQuery, Chat, ChatMember, InlineKeyboardMarkup, InlineKeyboardButton, Message } from 'telegram-typings';
+import { getRepository, Repository } from 'typeorm';
 import { Administrator } from '../../entity/Administrator';
-import ActiveSession from '../activeSession';
-
-import { CommandManager, CommandProcessor } from '../command';
+import { Chatgroup } from '../../entity/Chatgroup';
+import ActiveSession, { SessionAction } from '../activeSession';
+import { CommandManager } from '../command';
 import { Reply } from '../tools';
 
-/**
- * A class to handle the general help command.
- */
 export default class AdminTalent {
-
     private commandManager: CommandManager;
-    private commandProcessor: CommandProcessor;
 
-    /**
-     * Class constructor to set some base variables
-     * @param commandManager - The object to manage bots commands.
-     * @param commandProcessor - The class to process the commands and parameters.
-     */
-    constructor(commandManager: CommandManager, commandProcessor: CommandProcessor) {
-
+    constructor(commandManager: CommandManager) {
         this.commandManager = commandManager;
-        this.commandProcessor = commandProcessor;
-
-        // Add bot commands.
         this.commandManager.add(
-            'addAdministrator',
+            'addadmin',
             'Add administrator to manage covalent',
             'Add administrator to manage covalent',
-            this.showChatAdministrator.bind(this),
+            this.showChatAdministratorsToBeAdded.bind(this),
         );
         this.commandManager.add(
-            'deleteAdministrator',
-            'Delete administrator; remove his/her rights to manage covalent',
-            'Delete administrator; remove his/her rights to manage covalent',
-            this.showExistingAdministrator.bind(this),
+            'removeadmin',
+            'Remove administrator; remove his/her rights to manage covalent',
+            'Remove administrator; remove his/her rights to manage covalent',
+            this.showExistingAdministratorsToBeRemoved.bind(this),
+        );
+        this.commandManager.add(
+            'viewadmin',
+            'View administrators',
+            'View administrators',
+            this.showChatAdministrators.bind(this),
         );
     }
 
-    async showChatAdministrator(ctx: ContextMessageUpdate){
-
-        const response = await ctx.getChat();
-
-        const buttons = [];
-        const chatAdministrators = await ctx.getChatAdministrators();
-
-        const adminRepository = await getRepository(Administrator);
-        const currentAdmins = await adminRepository
-            .createQueryBuilder('administrator')
-            .select('administrator.userId')
-            .leftJoin('administrator.chatgroups', 'chatgroup', 'chatgroup.chatgroupId = :chatgroupId', {
-                chatgroupId: response.id,
-            })
-            .getMany();
-
-        let newAdmins = chatAdministrators.filter(chatAdministrator => !currentAdmins.find(currentAdmin => currentAdmin.userId === chatAdministrator.user.id));
-
+    private buildAdminButtons(adminList: ChatMember[]): InlineKeyboardMarkup {
         // We want 4 buttons per row for admin
         // There will always be at least 1 admin, hence totalBins >= 1.
-        let totalBins = Math.ceil(newAdmins.length / 4);
+        const buttons: InlineKeyboardButton[][] = [];
+        let totalBins = Math.ceil(adminList.length / 4);
         while (totalBins > 0) {
             buttons.push([]);
             totalBins--;
         } // Buttons is now [[], [], ...], containing [] equal to no of bins.
-        for (let i = 0; i < newAdmins.length; i++) {
-            const admin = newAdmins[i];
+
+        for (let i = 0; i < adminList.length; i++) {
+            const admin = adminList[i];
             const bin = Math.floor(i / 4);
-            buttons[bin].push(Markup.callbackButton(admin.user.first_name, admin.user.id.toString()));
+            const button: InlineKeyboardButton = Markup.callbackButton(admin.user.first_name, admin.user.id.toString());
+            buttons[bin].push(button);
         }
-        if(newAdmins.length > 0) {
-            buttons.push([]);
-            buttons[buttons.length - 1].push(Markup.callbackButton('Exit!', 'exit'));
-
-            let message = ctx.update.message;
-
-            ActiveSession.startSession('addAdministrator', response.id, message);
-
-            Reply.replyInlineKeyboard(ctx, 'Who shall be the administrator for this group?', buttons);
-        }else{
-            Reply.replyHTML(ctx, "All chat administrators are added as Administrators.");
-        }
-
+        buttons.push([]);
+        buttons[buttons.length - 1].push(Markup.callbackButton('Exit!', 'exit'));
+        return {
+            inline_keyboard: buttons,
+        };
     }
 
-    async addAdministrator(ctx: ContextMessageUpdate){
-
-        //check if is exit; kill session
-        //else we add administrator
-        let callbackQuery = ctx.update.callback_query;
-        let chatgroupId = callbackQuery.message.chat.id;
-
-        if(callbackQuery.data === 'exit'){
-            ctx.answerCbQuery('Ok! Ready for next command!');
-            ctx.editMessageText('Done with adding administrators!'); //remove the button
-            ActiveSession.endSession(chatgroupId);
-
-        }else{
-            let userId = parseInt(callbackQuery.data);
-            const chatgroupRepo = await getRepository(Chatgroup);
-            const chatgroup = await chatgroupRepo.findOne({
-                chatgroupId: chatgroupId
+    // Returns admin that was removed, or throws error
+    private async removeAdministrator(chatgroupId: number, adminUserId: number): Promise<Administrator> {
+        const administratorRepo = getRepository(Administrator);
+        const administrator = await administratorRepo
+            .findOne({
+                userId: adminUserId,
             });
-
-            const administratorRepo = await getRepository(Administrator);
-            const administrator = await administratorRepo.findOne({
-                userId: userId
-            });
-
-            if(administrator){
-                let found = administrator.chatgroups.find( function( group ) {
-                    return group.chatgroupId === chatgroupId;
-                } );
-                if(found){
-                    ctx.answerCbQuery('User is already an administrator for this group.');
-                }else{
-                    administrator.chatgroups.push(chatgroup);
-                    await getRepository(Administrator).save(administrator);
-                }
-            }else{
-                const newAdministrator = new Administrator();
-                newAdministrator.userId = userId;
-                newAdministrator.chatgroups = [];
-                newAdministrator.chatgroups.push(chatgroup);
-                await getRepository(Administrator).save(newAdministrator);
-                ctx.answerCbQuery('Successfully added!');
+        if (!administrator) { throw new Error(`Could not find admin in database when trying to remove them from chatgroup`); }
+        const chatgroupIndex = administrator.chatgroups
+            .findIndex((chatgroup) => chatgroup.chatgroupId === chatgroupId);
+        if (chatgroupIndex !== -1) {
+            if (administrator.chatgroups.length === 1) {
+                return await administratorRepo.remove(administrator);
             }
-
+            administrator.chatgroups.splice(chatgroupIndex, 1);
+            return await administratorRepo.save(administrator);
+        } else {
+            throw new Error('Admin to be removed was not actually an admin for given chatgroup');
         }
-
     }
 
-    async showExistingAdministrator(ctx: ContextMessageUpdate){
-
-        const response = await ctx.getChat();
-
-        const buttons = [];
-
-        const adminRepository = await getRepository(Administrator);
-        const currentAdmins = await adminRepository
+    private async getAddableAdmins(ctx: ContextMessageUpdate): Promise<ChatMember[]> {
+        const chatAdministrators: ChatMember[] = await ctx.getChatAdministrators();
+        const adminRepository: Repository<Administrator> = getRepository(Administrator);
+        const currentAdmins: Administrator[] = await adminRepository
             .createQueryBuilder('administrator')
-            .select('administrator.userId')
-            .leftJoin('administrator.chatgroups', 'chatgroup', 'chatgroup.chatgroupId = :chatgroupId', {
-                chatgroupId: response.id,
-            })
-            .getMany();
+            .leftJoinAndSelect('administrator.chatgroups', 'chatgroup')
+            .where('chatgroup.chatgroupId = :chatgroupId', { chatgroupId: ctx.chat.id })
+            .getMany(); // Returns [] if no admins registered with chatgroup
+        return chatAdministrators
+            .filter((chatAdministrator) => {
+                return !currentAdmins.find((currentAdmin) => currentAdmin.userId === chatAdministrator.user.id);
+            });
+    }
 
-        // We want 4 buttons per row for admin
-        // There will always be at least 1 admin, hence totalBins >= 1.
-        let totalBins = Math.ceil(currentAdmins.length / 4);
-        while (totalBins > 0) {
-            buttons.push([]);
-            totalBins--;
-        } // Buttons is now [[], [], ...], containing [] equal to no of bins.
+    async showChatAdministrators(ctx: ContextMessageUpdate) {
+        const chatInfo: Chat = await ctx.getChat();
+        const adminRepository: Repository<Administrator> = getRepository(Administrator);
+        const currentAdmins: Administrator[] = await adminRepository
+            .createQueryBuilder('administrator')
+            .leftJoinAndSelect('administrator.chatgroups', 'chatgroup')
+            .where('chatgroup.chatgroupId = :chatgroupId', { chatgroupId: chatInfo.id })
+            .getMany(); // Returns [] if no admins registered with chatgroup
+        if (currentAdmins.length === 0) {
+            ctx.reply('There are no Covalent administrators for this group. Please use /addadmin to add them!');
+            return;
+        }
+        let adminList = '';
+        for (const admin of currentAdmins) {
+            const adminInfo = await ctx.getChatMember(admin.userId);
+            const firstName = adminInfo.user.first_name;
+            adminList += `- ${firstName}\n`;
+        }
+        ctx.replyWithMarkdown(`*Covalent administrators for this group:* \n${adminList}`);
+    }
 
-        for (let i = 0; i < currentAdmins.length; i++) {
-            const admin = await ctx.getChatMember(currentAdmins[i].userId);
-            const bin = Math.floor(i / 4);
-            buttons[bin].push(Markup.callbackButton(admin.user.first_name, admin.user.id.toString()));
+    async showChatAdministratorsToBeAdded(ctx: ContextMessageUpdate) {
+        const chatInfo: Chat = await ctx.getChat();
+        // A bot being added to a new group doesn't need to have /start to talk to the group.
+        // Make registration transparent to user
+        const chatgroupRepo = getRepository(Chatgroup);
+        const currentChatgroup = await chatgroupRepo.findOne({
+            chatgroupId: chatInfo.id,
+        });
+        // If group isn't registered yet, register it
+        if (!currentChatgroup) {
+            const newChatgroup = chatgroupRepo.create({
+                chatgroupId: chatInfo.id,
+                name: chatInfo.title,
+            });
+            await chatgroupRepo.save(newChatgroup);
         }
 
-        if(currentAdmins.length > 0) {
-            buttons.push([]);
-            buttons[buttons.length - 1].push(Markup.callbackButton('Exit!', 'exit'));
+        const addableAdmins: ChatMember[] = await this.getAddableAdmins(ctx);
 
-            let message = ctx.update.message;
+        if (addableAdmins.length > 0) {
+            const buttons: InlineKeyboardMarkup = this.buildAdminButtons(addableAdmins);
+            const addAdminKeyboardMarkup: ExtraReplyMessage = {
+                reply_markup: buttons,
+            };
 
-            ActiveSession.startSession('deleteAdministrator', response.id, message);
+            const message: Message = ctx.update.message;
 
-            Reply.replyInlineKeyboard(ctx, 'Delete user as administrator?', buttons);
-        }else{
-            Reply.replyHTML(ctx, "There are no administrator for this chat.");
+            ActiveSession.startSession(SessionAction.AddAdmin, chatInfo.id, message);
+
+            // Use a one-time keyboard to add the admin.
+            ctx.reply('Who shall be a Covalent administrator for this group?', addAdminKeyboardMarkup);
+        } else {
+            ctx.reply('All chat administrators are already Covalent administrators');
         }
     }
 
-    async deleteAdministrator(ctx: ContextMessageUpdate, isCallback){
+    async addAdministrator(ctx: ContextMessageUpdate) {
+        const callbackQuery: CallbackQuery = ctx.update.callback_query;
+        const chatgroupId: number = callbackQuery.message.chat.id;
 
-        //check if is exit; kill session
-        //else we delete administrator
-        let chatgroupId = isCallback ? ctx.update.callback_query.message.chat.id : ctx.update.message.chat.id;
-
-        if(isCallback && ctx.update.callback_query.data === 'exit'){
-            ctx.answerCbQuery('Ok! Ready for next command!');
-            ctx.editMessageText('Done with deleting administrators!'); //remove the button
+        if (callbackQuery.data === 'exit') {
+            Reply.handleCancelledOperation(ctx, SessionAction.AddAdmin);
             ActiveSession.endSession(chatgroupId);
+            return;
+        }
 
+        const userId: number = Number.parseInt(callbackQuery.data, 10);
+        const newAdminDetails = await ctx.getChatMember(userId);
 
-        }else{
-            let userId = isCallback ? parseInt(ctx.update.callback_query.data) : ctx.update.message.left_chat_member.id;
+        const chatgroupRepo = getRepository(Chatgroup);
+        const chatgroup = await chatgroupRepo.findOne({
+            chatgroupId,
+        });
+        if (!chatgroup) {
+            throw new Error('Chat group is not registered with Covalent. Did the chat group ID change?');
+        }
 
-            const administratorRepo = await getRepository(Administrator);
-            const administrator = await administratorRepo
-                .createQueryBuilder('administrator')
-                .leftJoinAndSelect('administrator.chatgroups', 'chatgroup')
-                .where('administrator.userId = :userId', {userId: userId})
-                .getOne();
+        const administratorRepo = getRepository(Administrator);
+        const adminToBeAdded = await administratorRepo.findOne({
+            userId,
+        });
 
-            if (administrator && administrator.chatgroups.length > 0) {
-                if (administrator.chatgroups.length === 1) {
-                    await administratorRepo
-                        .createQueryBuilder()
-                        .delete()
-                        .from(Administrator)
-                        .where("id = :id", {id: administrator.id})
-                        .execute();
-                } else {
-                    let index = administrator.chatgroups.findIndex(chatgroup => chatgroup.chatgroupId === chatgroupId);
-                    if (index != -1) {
-                        administrator.chatgroups.splice(index, 1);
-                        await getRepository(Administrator).save(administrator);
-                    }
-                }
-                if(isCallback) {
-                    ctx.answerCbQuery('Successfully remove user as an Administrator for this group!');
-                }
-
+        if (adminToBeAdded) {
+            const alreadyAdminOfChatgroup = adminToBeAdded.chatgroups.find((group) => {
+                return group.chatgroupId === chatgroupId;
+            });
+            if (alreadyAdminOfChatgroup) {
+                ctx.answerCbQuery(`${newAdminDetails.user.first_name} is already an administrator for this group!`);
+                ctx.editMessageText(`${newAdminDetails.user.first_name} is already an administrator for this group!`);
+                return;
             } else {
-                if(isCallback) {
-                    ctx.answerCbQuery('User is not an administrator.');
-                }
+                adminToBeAdded.chatgroups.push(chatgroup);
+                await administratorRepo.save(adminToBeAdded);
             }
+        } else {
+            const newAdministrator = new Administrator();
+            newAdministrator.userId = userId;
+            newAdministrator.chatgroups = [chatgroup];
+            await administratorRepo.save(newAdministrator);
+        }
+
+        ctx.answerCbQuery(`Added ${newAdminDetails.user.first_name} as a Covalent admin!`);
+
+        const addableAdmins = await this.getAddableAdmins(ctx);
+
+        if (addableAdmins.length > 0) {
+            const buttons: InlineKeyboardMarkup = this.buildAdminButtons(addableAdmins);
+            const addAdminKeyboardMarkup: ExtraEditMessage = {
+                reply_markup: buttons,
+            };
+            ctx.editMessageText('Who shall be a Covalent administrator for this group?', addAdminKeyboardMarkup);
+        } else {
+            ctx.editMessageText('All chat administrators are already Covalent administrators');
+        }
+        ActiveSession.endSession(chatgroupId);
+    }
+
+    async showExistingAdministratorsToBeRemoved(ctx: ContextMessageUpdate) {
+        const chatInfo = await ctx.getChat();
+        const adminRepository = getRepository(Administrator);
+        const currentAdmins = await adminRepository
+            .createQueryBuilder('administrator')
+            .leftJoinAndSelect('administrator.chatgroups', 'chatgroup')
+            .where('chatgroup.chatgroupId = :chatgroupId', { chatgroupId: chatInfo.id })
+            .getMany();
+        if (currentAdmins.length > 0) {
+            const currentAdminDetails: ChatMember[] = await Promise.all(currentAdmins.map(async (admin) => {
+                return await ctx.getChatMember(admin.userId);
+            }));
+            const buttons: InlineKeyboardMarkup = this.buildAdminButtons(currentAdminDetails);
+            const removeAdminKeyboardMarkup: ExtraReplyMessage = {
+                reply_markup: buttons,
+            };
+
+            const message = ctx.update.message;
+
+            ActiveSession.startSession(SessionAction.RemoveAdmin, chatInfo.id, message);
+
+            ctx.reply('Remove a user as a Covalent administrator', removeAdminKeyboardMarkup);
+        } else {
+            ctx.reply('There are no administrators registered for this chat. Please use /addadmin to add them!');
         }
     }
 
-    async updateGroupId(ctx: ContextMessageUpdate){
+    async removeAdministratorButtonCallback(ctx: ContextMessageUpdate): Promise<void> {
+        const chatgroupId = ctx.update.callback_query.message.chat.id;
+        ActiveSession.endSession(chatgroupId);
+        if (ctx.update.callback_query.data === 'exit') {
+            Reply.handleCancelledOperation(ctx, SessionAction.RemoveAdmin);
+            return;
+        }
+        const adminUserId = Number.parseInt(ctx.update.callback_query.data, 10);
+        const adminInfo = await ctx.getChatMember(adminUserId);
+        try {
+            const removedAdmin = await this.removeAdministrator(chatgroupId, adminUserId);
+            ctx.answerCbQuery(`${adminInfo.user.first_name} is no longer a Covalent administrator.`);
+            ctx.editMessageText(`${adminInfo.user.first_name} is no longer a Covalent administrator.`);
+        } catch (exception) {
+            ctx.answerCbQuery(`Error removing administrator: ${exception.message}`);
+            ctx.editMessageText(`Error removing administrator: ${exception.message}`);
+        }
+    }
 
-        let oldChatgroupId = ctx.update.message.chat.id;
-        let newChatgroupId = ctx.update.message.migrate_to_chat_id;
+    async removeAdministratorOnLeftChat(ctx: ContextMessageUpdate): Promise<void> {
+        const chatgroupId = ctx.update.message.chat.id;
+        const adminUserId = ctx.update.message.left_chat_member.id;
+        try {
+            const removedAdmin = await this.removeAdministrator(chatgroupId, adminUserId);
+        } catch (exception) {
+            // todo: log, send alert?
+        }
+    }
+
+    async updateGroupId(ctx: ContextMessageUpdate) {
+        const oldChatgroupId = ctx.update.message.chat.id;
+        const newChatgroupId = ctx.update.message.migrate_to_chat_id;
 
         const chatgroupRepo = await getRepository(Chatgroup);
         const chatgroup = await chatgroupRepo.findOne({
-            chatgroupId: oldChatgroupId
+            chatgroupId: oldChatgroupId,
         });
 
-        if(chatgroup){
+        if (chatgroup) {
             chatgroup.chatgroupId = newChatgroupId;
             await getRepository(Chatgroup).save(chatgroup);
         }
-
     }
-
-
 }

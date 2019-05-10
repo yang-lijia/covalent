@@ -3,11 +3,11 @@ dotenv.config();
 
 import 'reflect-metadata';
 import { createConnection } from 'typeorm';
-import ActiveSession from './modules/activeSession';
+import ActiveSession, {SessionAction} from './modules/activeSession';
 import { CommandManager, CommandProcessor } from './modules/command';
 import { DebugTalent, HappyTalent, HelpTalent, RegisterTalent, SurveyTalent, AdminTalent } from './modules/talent';
 
-import Telegraf from 'telegraf';
+import Telegraf, { ContextMessageUpdate } from 'telegraf';
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -18,7 +18,7 @@ const cmdManager = new CommandManager();
 const happyTalent = new HappyTalent(cmdManager, cmdProcessor);
 const helpTalent = new HelpTalent(cmdManager, cmdProcessor);
 const registerTalent = new RegisterTalent(cmdManager, cmdProcessor);
-const adminTalent = new AdminTalent(cmdManager, cmdProcessor);
+const adminTalent = new AdminTalent(cmdManager);
 const surveyTalent = new SurveyTalent(cmdManager, cmdProcessor);
 if (process.env.NODE_ENV !== 'production') {
     const debugTalent = new DebugTalent(cmdManager, cmdProcessor);
@@ -32,11 +32,14 @@ async function init() {
         console.log(JSON.stringify(connection.options, null, 2));
     } catch (error) {
         console.error(error);
+        return -1;
     }
 
     // Call this to register all the commands to the bot.
     cmdManager.registerToBot(bot);
-    bot.on('callback_query', (ctx) => {
+
+    // Handle callbacks (button presses)
+    bot.on('callback_query', async (ctx: ContextMessageUpdate) => {
         const chatId = ctx.update.callback_query.message.chat.id;
 
         const currentSession = ActiveSession.getSession(chatId);
@@ -51,16 +54,17 @@ async function init() {
         try {
             const action = ActiveSession.getSession(chatId).action;
             switch (action) {
-                case 'addAdministrator':
-                    adminTalent.addAdministrator(ctx);
+                case SessionAction.AddAdmin:
+                    await adminTalent.addAdministrator(ctx);
                     break;
-                case 'deleteAdministrator':
-                    adminTalent.deleteAdministrator(ctx, true);
+                case SessionAction.RemoveAdmin:
+                    await adminTalent.removeAdministratorButtonCallback(ctx);
                     break;
                 default:
                     break;
             }
         } catch (exception) {
+            ActiveSession.endSession(ctx.callbackQuery.message.chat.id);
             console.error(exception);
         }
 
@@ -75,18 +79,19 @@ async function init() {
         */
     });
 
-    //Handler to delete administrator if chat member leave the group
-    bot.on('left_chat_member', (ctx) => {
-        adminTalent.deleteAdministrator(ctx, false);
+    // Bot needs to know when an admin leaves a group
+    bot.on('left_chat_member', async (ctx) => {
+        await adminTalent.removeAdministratorOnLeftChat(ctx);
     });
 
-    //Handler to update the group id if group becomes super group
+    // Handler to update the group id if group becomes super group
     bot.on('migrate_to_chat_id', (ctx) => {
         adminTalent.updateGroupId(ctx);
     });
 
     // Handler for /start command
     bot.start((ctx) => ctx.reply('Be happy and awesome. Help others to be happy and awesome! 😁'));
+
     // Start polling for messages
     bot.startPolling();
 }
