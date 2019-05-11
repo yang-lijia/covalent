@@ -277,8 +277,8 @@ export default class AdminTalent {
             ctx.editMessageText(
                 'All chat administrators are already Covalent administrators',
             );
+            ActiveSession.endSession(chatgroupId);
         }
-        ActiveSession.endSession(chatgroupId);
     }
 
     async showExistingAdministratorsToBeRemoved(ctx: ContextMessageUpdate) {
