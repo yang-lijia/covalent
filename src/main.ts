@@ -3,9 +3,16 @@ dotenv.config();
 
 import 'reflect-metadata';
 import { createConnection } from 'typeorm';
-import ActiveSession, {SessionAction} from './modules/activeSession';
+import ActiveSession, { SessionAction } from './modules/activeSession';
 import { CommandManager, CommandProcessor } from './modules/command';
-import { DebugTalent, HappyTalent, HelpTalent, RegisterTalent, SurveyTalent, AdminTalent } from './modules/talent';
+import {
+    DebugTalent,
+    HappyTalent,
+    HelpTalent,
+    RegisterTalent,
+    SurveyTalent,
+    AdminTalent,
+} from './modules/talent';
 
 import Telegraf, { ContextMessageUpdate } from 'telegraf';
 
@@ -45,9 +52,14 @@ async function init() {
         const currentSession = ActiveSession.getSession(chatId);
         const msgDate = ctx.update.callback_query.message.date;
 
-        if ( (currentSession && msgDate < currentSession.message.date) || !currentSession) {
+        if (
+            (currentSession && msgDate < currentSession.message.date) ||
+            !currentSession
+        ) {
             // Old replies
-            ctx.editMessageText('This message has timed out. Kindly issue another command.');
+            ctx.editMessageText(
+                'This message has timed out. Kindly issue another command.',
+            );
             return;
         }
 
@@ -69,14 +81,14 @@ async function init() {
         }
 
         /*
-        *TODO:
+         *TODO:
          * Store the response based on group
-          * Send ACK upon response
-          * E.g. ctx.answerCbQuery('If you are happy and you know it, clap your hands!');
-          * Hide the button when survey is over
-          * ctx.editMessageText()
-          * Need to think about how we gonna do this... Imagine if there is a lot of group and user
-        */
+         * Send ACK upon response
+         * E.g. ctx.answerCbQuery('If you are happy and you know it, clap your hands!');
+         * Hide the button when survey is over
+         * ctx.editMessageText()
+         * Need to think about how we gonna do this... Imagine if there is a lot of group and user
+         */
     });
 
     // Bot needs to know when an admin leaves a group
@@ -90,7 +102,11 @@ async function init() {
     });
 
     // Handler for /start command
-    bot.start((ctx) => ctx.reply('Be happy and awesome. Help others to be happy and awesome! 😁'));
+    bot.start((ctx) =>
+        ctx.reply(
+            'Be happy and awesome. Help others to be happy and awesome! 😁',
+        ),
+    );
 
     // Start polling for messages
     bot.startPolling();

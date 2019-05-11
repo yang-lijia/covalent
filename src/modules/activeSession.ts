@@ -12,7 +12,8 @@ export enum SessionAction {
 
 export default {
     getSession(chatId: number) {
-        return activeSessions[chatId];    },
+        return activeSessions[chatId];
+    },
 
     startSession(action: SessionAction, chatId: number, message: Message) {
         activeSessions[chatId] = { action, message };
